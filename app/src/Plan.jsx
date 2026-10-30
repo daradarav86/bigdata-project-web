@@ -5,6 +5,7 @@ import { PLAN_STEPS, stepDone, draftQuestion, contextOf, checkCodeDesign, buildP
 import { reviewQuestion } from './coach.js'
 import { Text, Seg, Think, Stuck } from './ui.jsx'
 import Chat from './Chat.jsx'
+import { exportPlanDocx } from './exportDoc.js'
 
 const dsName = d => `${d.field} · ${d.desc}`
 const tokens = s => s.split(/[\s,·/()]+/).filter(t => t.length >= 2)
@@ -368,6 +369,13 @@ function MethodStep({ game, patch, go }) {
 
 function SummaryStep({ game, patch, go }) {
   const [copied, setCopied] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState('')
+  const [saveErr, setSaveErr] = useState('')
+  const saveDocx = async () => {
+    setSaving(true); setSaved(''); setSaveErr('')
+    try { setSaved(await exportPlanDocx(game)) } catch { setSaveErr('파일을 만들지 못했어요. 잠시 뒤 다시 해 보세요.') } finally { setSaving(false) }
+  }
   const text = buildPlanText(game)
   const copy = async () => { try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch { /* 복사 불가 환경 */ } }
   const todo = PLAN_STEPS.filter(s => s.id !== 'summary' && !stepDone(s.id, game))
@@ -380,10 +388,21 @@ function SummaryStep({ game, patch, go }) {
         : <p className="ok-msg">기획안의 모든 단계를 썼어요. 아래 내용을 확인하고, 발표 만들기로 넘어가요.</p>}
       <pre className="docview">{text}</pre>
       <div className="row start">
-        <button className="ghost" onClick={copy}>{copied ? '복사됨' : '기획안 전체 복사'}</button>
-        <button className="primary" onClick={() => go('deck')}>발표 슬라이드 만들기</button>
+        <button className="primary" disabled={saving} onClick={saveDocx}>{saving ? '만드는 중…' : '기획안 Word(.docx)로 저장'}</button>
+        <button className="ghost" onClick={copy}>{copied ? '복사됨' : '글만 복사'}</button>
+        <button className="ghost" onClick={() => go('deck')}>발표 슬라이드 만들기</button>
       </div>
-      <p className="muted small">복사한 내용은 구글 문서 기획안에 붙여 넣을 수 있어요. 내용은 이 기기의 브라우저에 저장돼요.</p>
+      {saved && <p className="ok-msg" role="status">"{saved}"를 내려받았어요.</p>}
+      {saveErr && <p className="warn" role="alert">{saveErr}</p>}
+      <div className="howto-docs">
+        <b>구글 문서(Docs)로 이어서 쓰려면</b>
+        <ol>
+          <li>내려받은 .docx 파일을 구글 Drive에 올려요.</li>
+          <li>파일을 더블클릭해서 열고, 위쪽의 <b>"Google Docs로 열기"</b> 또는 <b>파일 → Google Docs로 저장</b>을 눌러요.</li>
+          <li>이제 구글 문서에서 팀원과 함께 고쳐 쓸 수 있어요. 4번(분석 결과)은 분석한 뒤에 채워요.</li>
+        </ol>
+        <small className="muted">내용은 이 기기의 브라우저에도 저장돼요. 표 모양은 구글 문서에서 조금 달라질 수 있어요.</small>
+      </div>
     </>
   )
 }

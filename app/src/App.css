@@ -293,3 +293,6 @@ details summary { cursor: pointer; }
 .rlog li b { margin-right: 6px; color: var(--blue); }
 .locked { border: 2px dashed var(--line); border-radius: 12px; padding: 16px; background: var(--bg); color: var(--muted); }
 .locked p { margin: 4px 0 0; }
+
+.howto-docs { background: var(--blue-soft); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; }
+.howto-docs ol { margin: 4px 0; padding-left: 20px; }
