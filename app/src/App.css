@@ -253,3 +253,14 @@ details summary { cursor: pointer; }
   .printdeck .slidewrap { break-after: page; }
   .slide { border-color: #365BC5; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
+
+/* ---------- 팀 만들기 / 들어가기 ---------- */
+.gate { max-width: 640px; margin: 0 auto; padding: 40px 16px 56px; display: grid; gap: 14px; }
+.gate h1 { margin: 0; color: var(--blue); }
+.gate .lead { margin: 0; font-size: 1.05rem; }
+.gate-how { border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; }
+.gate-how summary { cursor: pointer; color: var(--blue); font-weight: 600; }
+.gate-tabs button { flex: 1 1 200px; }
+.gate-form { display: grid; gap: 14px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 520px) { .two-col { grid-template-columns: 1fr; } }
