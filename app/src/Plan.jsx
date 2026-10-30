@@ -48,9 +48,14 @@ function ColPicker({ label, hint, ds, value, onPick, kinds, warn }) {
             <small>{KIND_LABEL[c.kind]}{c.kind === 'group' ? ` · ${c.unique}개 값` : ''}{c.missing ? ` · 빈칸 ${c.missing}` : ''}</small>
           </button>
         ))}
-        {list.length === 0 && <p className="muted">알맞은 열이 없어요. 아래 "모든 열 보기"를 켜 보세요.</p>}
+        {list.length === 0 && <p className="muted">알맞은 열이 없어요. 아래 "모든 열 보기"를 눌러 보세요.</p>}
       </div>
-      <label className="check small"><input type="checkbox" checked={all} onChange={e => setAll(e.target.checked)} /> 모든 열 보기</label>
+      <div className="row start">
+        <button type="button" className={`ghost ${all ? 'on' : ''}`} aria-pressed={all} onClick={() => setAll(v => !v)}>
+          {all ? `추천 열만 보기 (${ds.columns.filter(c => kinds.includes(c.kind)).length}개)` : `모든 열 보기 (${ds.columns.length}개)`}
+        </button>
+        <small className="muted">{all ? '모든 종류의 열이 보여요. 종류를 꼭 확인해요.' : '이 칸에 어울리는 종류의 열만 보여요.'}</small>
+      </div>
       {w && <p className="warn small" role="status">{w}</p>}
     </div>
   )

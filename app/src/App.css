@@ -45,6 +45,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 .primary { background: var(--blue); color: #fff; border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 700; white-space: nowrap; }
 .ghost { background: var(--card); border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 14px; font-weight: 600; }
 .ghost:hover:not(:disabled) { border-color: var(--blue); }
+.ghost.on { background: var(--blue-soft); border-color: var(--blue); color: var(--blue); }
 .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .row.start { justify-content: flex-start; }
 .check { display: flex; gap: 8px; align-items: center; cursor: pointer; }
@@ -113,11 +114,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 .facts.wide div { grid-template-columns: 96px 1fr; }
 .facts dt { color: var(--muted); font-weight: 600; }
 .facts dd { margin: 0; }
-.colgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin: 6px 0; max-height: 360px; overflow-y: auto; padding: 2px; }
-.col { text-align: left; display: grid; gap: 2px; padding: 8px 10px; background: var(--card); border: 1.5px solid var(--line); border-radius: 10px; }
+.colgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin: 6px 0; max-height: 560px; overflow-y: auto; padding: 4px; }
+.col { text-align: left; display: grid; gap: 3px; padding: 12px 14px; min-height: 84px; background: var(--card); border: 1.5px solid var(--line); border-radius: 10px; }
 .col code { justify-self: start; }
-.col span { font-size: .85rem; }
-.col small { color: var(--muted); font-size: .76rem; }
+.col span { font-size: .92rem; }
+.col small { color: var(--muted); font-size: .8rem; }
 .col.on { border-color: var(--blue); background: var(--blue-soft); box-shadow: 0 0 0 2px color-mix(in srgb, var(--blue) 25%, transparent); }
 .lead2 { margin: 0; padding: 12px 14px; background: var(--blue-soft); border-radius: 12px; }
 .plantable { display: grid; gap: 6px; }
@@ -272,3 +273,6 @@ details summary { cursor: pointer; }
 .fsent { line-height: 2.4; margin: 8px 0; }
 .blankin { width: auto; display: inline-block; padding: 2px 8px; margin: 0 2px; border-width: 0 0 2px 0; border-radius: 0; background: var(--blue-soft); color: var(--ink); font-weight: 700; min-width: 6ch; }
 .blankin:focus-visible { outline-offset: 0; }
+
+.stage textarea { min-height: 6.2rem; line-height: 1.7; }
+.stage .mono { min-height: 5rem; }
