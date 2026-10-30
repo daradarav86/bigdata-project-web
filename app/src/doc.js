@@ -7,7 +7,7 @@ export function reviewState(g) {
   const last = g.reviews[g.reviews.length - 1]
   const left = MAX_REVIEWS - g.reviews.length
   const same = !!last && last.text === g.question && last.picks === `|`
-  return { last, left, same, accepted: same && (last.pass || left <= 0), exhausted: left <= 0 }
+  return { last, left, same, accepted: (same && last.pass) || left <= 0, exhausted: left <= 0 }
 }
 
 export const pct = (n, total) => (total ? Math.round((n / total) * 1000) / 10 : 0)

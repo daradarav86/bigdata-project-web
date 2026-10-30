@@ -1,8 +1,8 @@
 ﻿import { useMemo, useState } from 'react'
 import datasets from './data/datasets.json'
 import { FRAMES, STATS, MISSING, KIND_LABEL, getDs, getCol } from './data/meta.js'
-import { PLAN_STEPS, stepDone, draftQuestion, contextOf, checkCodeDesign, buildPlanText, pct, statOf, frameOf, nameOf, missingOf } from './doc.js'
-import { checkQuestion } from './coach.js'
+import { PLAN_STEPS, stepDone, draftQuestion, contextOf, checkCodeDesign, buildPlanText, pct, statOf, frameOf, nameOf, missingOf, reviewState, MAX_REVIEWS } from './doc.js'
+import { reviewQuestion } from './coach.js'
 import { Text, Seg, Think, Stuck } from './ui.jsx'
 import Chat from './Chat.jsx'
 
@@ -62,14 +62,16 @@ function ColPicker({ label, hint, ds, value, onPick, kinds, warn }) {
 }
 
 /* ---------- 각 단계 ---------- */
-function TeamStep({ game, patch, setSize, setMember }) {
+function TeamStep({ game, patch, setMember }) {
   return (
     <>
-      <Text label="조 이름" value={game.team} max={16} placeholder="예: 1-3 별빛조" onChange={v => patch({ team: v })} hint="코치를 쓰려면 꼭 필요해요." />
-      <Seg label="우리 팀 인원수" value={game.size} onChange={setSize}
-        options={[2, 3, 4, 5, 6].map(n => ({ id: n, ko: `${n}명` }))} />
+      <dl className="facts wide">
+        <div><dt>팀 이름</dt><dd><b>{game.team}</b></dd></div>
+        <div><dt>인원수</dt><dd>{game.size}명</dd></div>
+      </dl>
       <div className="field">
         <span className="lbl">팀원 (학번, 이름)</span>
+        <p className="hint">팀 이름과 팀원은 처음 화면에서 정했어요. 학번이나 이름이 틀렸다면 여기서 고쳐요.</p>
         <div className="members">
           {game.members.map((m, i) => (
             <div key={i} className="mrow">
@@ -91,7 +93,6 @@ function TeamStep({ game, patch, setSize, setMember }) {
     </>
   )
 }
-
 function CareerStep({ game, patch, setMember }) {
   const fields = [...new Set(datasets.map(d => d.field))]
   return (
@@ -179,11 +180,17 @@ function SceneStep({ game, patch }) {
 }
 
 function QuestionStep({ game, patch, go }) {
+  const [fb, setFb] = useState(null)
   const ds = getDs(game.dataset)
   if (!ds) return <p className="warn">먼저 "데이터 고르기"에서 데이터를 하나 골라 주세요. <button className="link" onClick={() => go('data')}>데이터 고르기로 가기</button></p>
   const fr = frameOf(game.frame)
-  const checks = checkQuestion(game.question, game)
-  const n = checks.filter(c => c.ok).length
+  const rv = reviewState(game)
+  const shown = rv.same ? (fb ?? reviewQuestion(rv.last.text, game)) : null
+  const review = () => {
+    const r = reviewQuestion(game.question, game)
+    patch(g => ({ reviews: [...g.reviews, { text: g.question, picks: `|`, score: r.score, pass: r.pass, at: Date.now() }] }))
+    setFb(r)
+  }
   const setFrame = id => patch({ frame: id, chart: frameOf(id).chart })
   const rec = ds.pair
   return (
@@ -203,17 +210,44 @@ function QuestionStep({ game, patch, go }) {
 
       <div className="field">
         <span className="lbl">1-2. 우리 팀의 탐구 질문 (필수, 한 문장)</span>
-        <p className="hint">고른 열로 초안을 만들 수 있어요. 초안을 우리 말로 고쳐 쓰면 더 좋아요.</p>
+        <p className="hint">질문을 써서 <b>검토를 받아요.</b> 검토는 최대 {MAX_REVIEWS}번 받을 수 있고, 통과하면 아래 단계가 열려요. 점검 기준은 이 4가지예요.</p>
+        <ul className="criteria">
+          <li>한 문장이에요 (10~80자)</li>
+          <li>고른 열 이름이 질문에 그대로 들어 있어요</li>
+          <li>무엇과 무엇을 비교하는지 보여요</li>
+          <li>원인을 단정하지 않아요 ("때문에", "하면 오를까" 같은 말)</li>
+        </ul>
         <div className="row start">
-          <button className="ghost" disabled={!game.groupBy || !game.measure} onClick={() => patch({ question: draftQuestion(game) })}>초안 가져오기</button>
+          <button className="ghost" disabled={!game.groupBy || !game.measure || rv.exhausted} onClick={() => patch({ question: draftQuestion(game) })}>초안 가져오기</button>
           <small className="muted">{draftQuestion(game)}</small>
         </div>
-        <textarea rows={2} aria-label="탐구 질문" value={game.question} maxLength={100} onChange={e => patch({ question: e.target.value })} placeholder="예: 공부 시간 구간(studytime)별로 최종 성적(G3)의 평균은 어떻게 다를까?" />
-        <div className={`meter m${n}`}>
-          <b>{game.question.trim() ? (n === 4 ? '좋은 질문이에요' : `점검 ${n}/4`) : '질문을 쓰면 점검이 시작돼요'}</b>
-          <div className="bar" aria-hidden="true"><span style={{ width: `${game.question.trim() ? n * 25 : 0}%` }} /></div>
+        <textarea rows={3} aria-label="탐구 질문" value={game.question} maxLength={100} readOnly={rv.exhausted}
+          onChange={e => patch({ question: e.target.value })} placeholder="예: 공부 시간 구간(studytime)별로 최종 성적(G3)의 평균은 어떻게 다를까?" />
+        <div className="reviewbar">
+          <span className="dots" role="img" aria-label={`검토 기회 ${rv.left}번 남음`}>
+            {Array.from({ length: MAX_REVIEWS }, (_, i) => <i key={i} className={i < game.reviews.length ? 'used' : ''} />)}
+          </span>
+          <b>검토 기회 {rv.left}/{MAX_REVIEWS}</b>
+          <span className="spacer" />
+          <button className="primary" disabled={!game.groupBy || !game.measure || game.question.trim().length < 2 || rv.exhausted || rv.same} onClick={review}>
+            {rv.same ? '검토 완료 (고치면 다시 받을 수 있어요)' : '검토 받기'}
+          </button>
         </div>
-        <ul className="checks">{checks.map(c => <li key={c.label} className={c.ok ? 'ok' : 'no'}>{c.ok ? '✓' : '○'} {c.label}</li>)}</ul>
+        {(!game.groupBy || !game.measure) && <p className="warn small">먼저 위에서 묶는 기준과 계산할 열을 골라요.</p>}
+        {shown && (
+          <div className={`review ${shown.pass ? 'pass' : ''}`} role="status">
+            <b>{shown.pass ? '통과했어요' : `점검 ${shown.score}/4`}</b>
+            <ul className="checks">{shown.checks.map(c => <li key={c.label} className={c.ok ? 'ok' : 'no'}>{c.ok ? '✓' : '○'} {c.label}</li>)}</ul>
+            <b>코치의 되묻기</b>
+            <ul>{shown.asks.map(a => <li key={a}>{a}</li>)}</ul>
+          </div>
+        )}
+        {rv.exhausted && !rv.last?.pass && <p className="warn" role="status">검토 기회를 모두 썼어요. 못 지킨 항목(○)을 알고 계속해요. 선생님과 이야기해 보면 좋아요.</p>}
+        {game.reviews.length > 0 && (
+          <details className="rlog"><summary>검토 기록 ({game.reviews.length}회)</summary>
+            <ol>{game.reviews.map((r, i) => <li key={i}><b>{r.score}/4</b> {r.text}</li>)}</ol>
+          </details>
+        )}
         <details className="examples">
           <summary>이런 질문은 이렇게 고쳐요</summary>
           <div className="ex bad"><b>고치기 전</b> 공부를 많이 하면 성적이 오를까?<small>원인을 단정하고 있어요.</small></div>
@@ -223,7 +257,17 @@ function QuestionStep({ game, patch, go }) {
         </details>
       </div>
 
-      <Text label="1-3. 이 질문이 진로에서 중요한 장면 (3문장)" rows={5} value={game.scene} onChange={v => patch({ scene: v })}
+      {rv.accepted ? (
+        <>
+@'
+$new2 = @'
+        </>
+      ) : (
+        <div className="locked" role="status">
+          <b>🔒 질문 검토를 통과하면 열려요</b>
+          <p>1-3 진로 장면, 1-4 더 알고 싶은 질문, 1-5 분석 전 예상이 이어서 나와요. 위에서 질문을 쓰고 "검토 받기"를 눌러요. 기회는 {MAX_REVIEWS}번이고, 모두 쓰면 그대로 내려갈 수 있어요.</p>
+        </div>
+      )}      <Text label="1-3. 이 질문이 진로에서 중요한 장면 (3문장)" rows={5} value={game.scene} onChange={v => patch({ scene: v })}
         hint="우리 진로의 어떤 장면에서 이 질문의 답이 쓰이나요? 어려우면 아래 문장 틀로 시작해요."
         frame={[{ key: 'j', ph: '직업', def: game.keyword }, '이(가) ', { key: 'd', ph: '하는 일' }, '을(를) 할 때 ', { key: 'k', ph: '알아야 할 것' }, '을(를) 알면 ', { key: 'c', ph: '할 수 있는 것' }, '. 그래서 ', { key: 'g', ph: '묶는 기준', def: game.groupBy }, '별로 ', { key: 'm', ph: '계산할 열', def: game.measure }, '을(를) 비교해 보려고 한다.']} />
       <Text label="1-4. 더 알고 싶은 질문 (선택)" rows={2} value={game.extraQ} onChange={v => patch({ extraQ: v })} hint="같은 파일의 다른 열로 질문을 하나 더 만들어 보세요. 시간이 되면 분석해요." />

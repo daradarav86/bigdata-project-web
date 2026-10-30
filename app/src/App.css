@@ -276,3 +276,20 @@ details summary { cursor: pointer; }
 
 .stage textarea { min-height: 6.2rem; line-height: 1.7; }
 .stage .mono { min-height: 5rem; }
+
+/* ---------- 질문 5번 검토 ---------- */
+.criteria { margin: 0; padding-left: 20px; color: var(--muted); font-size: .92rem; }
+.reviewbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dots { display: inline-flex; gap: 5px; }
+.dots i { width: 14px; height: 14px; border-radius: 50%; background: var(--blue); display: inline-block; }
+.dots i.used { background: transparent; border: 2px solid var(--line); }
+.review { border: 2px solid var(--warn); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; }
+.review.pass { border-color: var(--ok); }
+.review.pass > b:first-child { color: var(--ok); }
+.review ul { margin: 0; padding-left: 20px; }
+.review .checks { padding-left: 0; }
+.rlog summary { color: var(--blue); font-weight: 600; }
+.rlog ol { margin: 6px 0 0; padding-left: 22px; font-size: .9rem; }
+.rlog li b { margin-right: 6px; color: var(--blue); }
+.locked { border: 2px dashed var(--line); border-radius: 12px; padding: 16px; background: var(--bg); color: var(--muted); }
+.locked p { margin: 4px 0 0; }
