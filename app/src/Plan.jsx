@@ -1,7 +1,7 @@
 ﻿import { useMemo, useState } from 'react'
 import datasets from './data/datasets.json'
 import { FRAMES, STATS, MISSING, KIND_LABEL, getDs, getCol } from './data/meta.js'
-import { PLAN_STEPS, stepDone, draftQuestion, contextOf, checkCodeDesign, buildPlanText, pct, statOf, frameOf, nameOf } from './doc.js'
+import { PLAN_STEPS, stepDone, draftQuestion, contextOf, checkCodeDesign, buildPlanText, pct, statOf, frameOf, nameOf, missingOf } from './doc.js'
 import { checkQuestion } from './coach.js'
 import { Text, Seg, Think, Stuck } from './ui.jsx'
 import Chat from './Chat.jsx'
@@ -109,8 +109,9 @@ function CareerStep({ game, patch, setMember }) {
       <div className="chips" aria-label="분야 예시">
         {fields.map(f => <button key={f} onClick={() => patch({ keyword: f })}>{f}</button>)}
       </div>
-      <Text label="1-1. 이 키워드를 고른 이유 (2~3문장)" rows={3} value={game.keywordWhy} onChange={v => patch({ keywordWhy: v })}
-        hint="예) 우리 팀은 ○○ 분야를 생각한다. ○○를 알면 ○○할 때 도움이 되기 때문이다." />
+      <Text label="1-1. 이 키워드를 고른 이유 (2~3문장)" rows={4} value={game.keywordWhy} onChange={v => patch({ keywordWhy: v })}
+        hint="자유롭게 써도 되고, 어려우면 아래 문장 틀로 시작해요."
+        frame={['우리 팀은 ', { key: 'f', ph: '분야', def: game.keyword }, ' 분야를 생각한다. ', { key: 'k', ph: '알고 싶은 것' }, '을(를) 알면 ', { key: 'w', ph: '어떤 때' }, '할 때 도움이 되기 때문이다.']} />
     </>
   )
 }
@@ -162,9 +163,12 @@ function SceneStep({ game, patch }) {
   return (
     <>
       <p className="hint">STEP 3. 아래 세 질문에 팀원이 돌아가며 한 줄씩 답해 보세요. 이 답이 다음 단계의 질문이 돼요.</p>
-      <Text label="① 이 직업을 가진 사람이 가장 자주 고민하는 것은?" rows={2} value={game.concern} onChange={v => patch({ concern: v })} hint="예) 학생이 공부를 어떻게 하게 도울까?" />
-      <Text label="② 그 고민에서 비교하고 싶은 두 집단(또는 여러 집단)은?" rows={2} value={game.groupsAsk} onChange={v => patch({ groupsAsk: v })} hint="예) 공부 시간이 짧은 학생 vs 긴 학생" />
-      <Text label="③ 그 집단들의 어떤 숫자를 보면 도움이 될까?" rows={2} value={game.numberAsk} onChange={v => patch({ numberAsk: v })} hint="예) 평균 성적" />
+      <Text label="① 이 직업을 가진 사람이 가장 자주 고민하는 것은?" rows={4} value={game.concern} onChange={v => patch({ concern: v })} hint="예) 학생이 공부를 어떻게 하게 도울까?"
+        frame={[{ key: 'j', ph: '직업', def: game.keyword }, ' 일을 하는 사람은 ', { key: 'c', ph: '고민' }, '을(를) 가장 자주 고민한다.']} />
+      <Text label="② 그 고민에서 비교하고 싶은 두 집단(또는 여러 집단)은?" rows={4} value={game.groupsAsk} onChange={v => patch({ groupsAsk: v })} hint="예) 공부 시간이 짧은 학생 vs 긴 학생"
+        frame={[{ key: 'a', ph: '집단 A' }, '와(과) ', { key: 'b', ph: '집단 B' }, '를 비교해 보고 싶다.']} />
+      <Text label="③ 그 집단들의 어떤 숫자를 보면 도움이 될까?" rows={4} value={game.numberAsk} onChange={v => patch({ numberAsk: v })} hint="예) 평균 성적"
+        frame={[{ key: 'n', ph: '숫자(예: 평균 성적)' }, '을(를) 보면 도움이 될 것 같다.']} />
     </>
   )
 }
@@ -214,11 +218,13 @@ function QuestionStep({ game, patch, go }) {
         </details>
       </div>
 
-      <Text label="1-3. 이 질문이 진로에서 중요한 장면 (3문장)" rows={3} value={game.scene} onChange={v => patch({ scene: v })}
-        hint={'틀: "(직업)이(가) (일)을 할 때 (알아야 할 것)을 알면 (할 수 있는 것). 그래서 (묶는 기준)별로 (계산할 열)을 비교해 보려고 한다."'} />
+      <Text label="1-3. 이 질문이 진로에서 중요한 장면 (3문장)" rows={5} value={game.scene} onChange={v => patch({ scene: v })}
+        hint="우리 진로의 어떤 장면에서 이 질문의 답이 쓰이나요? 어려우면 아래 문장 틀로 시작해요."
+        frame={[{ key: 'j', ph: '직업', def: game.keyword }, '이(가) ', { key: 'd', ph: '하는 일' }, '을(를) 할 때 ', { key: 'k', ph: '알아야 할 것' }, '을(를) 알면 ', { key: 'c', ph: '할 수 있는 것' }, '. 그래서 ', { key: 'g', ph: '묶는 기준', def: game.groupBy }, '별로 ', { key: 'm', ph: '계산할 열', def: game.measure }, '을(를) 비교해 보려고 한다.']} />
       <Text label="1-4. 더 알고 싶은 질문 (선택)" rows={2} value={game.extraQ} onChange={v => patch({ extraQ: v })} hint="같은 파일의 다른 열로 질문을 하나 더 만들어 보세요. 시간이 되면 분석해요." />
-      <Text label="1-5. 분석 전 예상과 이유" rows={2} value={game.expect} onChange={v => patch({ expect: v })}
-        hint="예) 공부 시간이 길수록 평균 성적이 높을 것이다. 이유: 공부한 시간이 많으니까. (분석 뒤 맞았는지 비교해요)" />
+      <Text label="1-5. 분석 전 예상과 이유" rows={4} value={game.expect} onChange={v => patch({ expect: v })}
+        hint="분석하기 전에 결과를 예상해 보면, 분석 뒤 맞았는지 비교할 수 있어요."
+        frame={[{ key: 'g', ph: '묶는 기준', def: game.groupBy }, '이(가) ', { key: 'u', ph: '어떤 쪽' }, ' ', { key: 'm', ph: '계산할 열', def: game.measure }, '이(가) ', { key: 'r', ph: '높을/낮을/클' }, ' 것이다. 이유: ', { key: 'y', ph: '이유' }, '.']} />
     </>
   )
 }
@@ -290,8 +296,9 @@ function MethodStep({ game, patch, go }) {
 
       <Seg label="④ 빈칸 처리" value={game.missingMethod} onChange={v => patch({ missingMethod: v })} options={MISSING.map(m => ({ id: m.id, ko: m.ko, desc: m.guide }))}
         hint={`계산할 열 ${game.measure}: 빈칸 ${mc.missing}개(전체의 약 ${pct(mc.missing, ds.rows)}%) · 묶는 기준 ${game.groupBy}: 빈칸 ${gc.missing}개 — 노트북 isnull().sum()으로 다시 확인해요.`} />
-      <Text label="그렇게 정한 이유" rows={2} value={game.missingWhy} onChange={v => patch({ missingWhy: v })}
-        hint={'틀: "___ 열은 빈칸이 ___개(전체의 약 ___%)뿐이라서 ___했다." 제거했다면 행 수 변화(처음 ___행 → ___행)도 써요.'} />
+      <Text label="그렇게 정한 이유" rows={3} value={game.missingWhy} onChange={v => patch({ missingWhy: v })}
+        hint="제거했다면 행 수 변화(처음 ___행 → ___행)도 써요. 어려우면 아래 문장 틀로 시작해요."
+        frame={[{ key: 'c', ph: '열 이름', def: game.measure }, ' 열은 빈칸이 ', { key: 'n', ph: '개수', def: String(mc.missing) }, '개(전체의 약 ', { key: 'p', ph: '%', def: String(pct(mc.missing, ds.rows)) }, '%)뿐이라서 ', { key: 'm', ph: '그대로 두었다/제거했다/채웠다', def: missingOf(game.missingMethod)?.ko.replace(/ \(.*\)/, '') }, '.']} />
       <Text label="⑥ 새 열 (선택)" value={game.newCol} onChange={v => patch({ newCol: v })} max={80}
         hint={ds.pair?.newCol ? `추천 아이디어: ${ds.pair.newCol}` : '기존 열을 계산해 새 열을 만들 수 있어요. 이번에 안 만들면 비워 둬요.'} />
 

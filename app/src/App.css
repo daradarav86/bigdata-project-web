@@ -264,3 +264,11 @@ details summary { cursor: pointer; }
 .gate-form { display: grid; gap: 14px; }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 520px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ---------- 문장 틀 도우미 ---------- */
+.framehelp { margin-top: 6px; border: 1px dashed var(--blue); border-radius: 10px; padding: 6px 12px; background: color-mix(in srgb, var(--blue) 5%, transparent); }
+.framehelp summary { cursor: pointer; color: var(--blue); font-weight: 600; }
+.framehelp summary small { font-weight: 400; color: var(--muted); margin-left: 6px; }
+.fsent { line-height: 2.4; margin: 8px 0; }
+.blankin { width: auto; display: inline-block; padding: 2px 8px; margin: 0 2px; border-width: 0 0 2px 0; border-radius: 0; background: var(--blue-soft); color: var(--ink); font-weight: 700; min-width: 6ch; }
+.blankin:focus-visible { outline-offset: 0; }
