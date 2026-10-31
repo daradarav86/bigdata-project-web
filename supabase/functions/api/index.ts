@@ -29,7 +29,7 @@ async function student(client: ReturnType<typeof db>, action: string, b: Record<
     const key = teamKey(cls as string, no as number)
     const salt = newSalt(), hash = await hashPin(salt, pin)
     const row = { key, cls, no, salt, hash, game: { ...game, team: key, cls, no, ai: undefined } }
-    const { data, error } = await client.from('teams').insert(row).select('key, cls, hash, coin_bonus, rev').single()
+    const { data, error } = await client.from('teams').insert(row).select('key, cls, hash, coin_bonus, rev, created_at').single()
     if (error?.code === '23505') return fail(409, 'exists', `${key}은 이미 있어요. "우리 팀으로 들어가기"를 눌러요.`)
     if (error) throw error
     return json(await view(client, data, row.game, await makeToken(key, hash)))
@@ -91,13 +91,14 @@ async function admin(client: ReturnType<typeof db>, action: string, b: Record<st
 
   if (action === 'admin_list') {
     const [{ data: teams, error }, { data: logs }, { data: settings }] = await Promise.all([
-      client.from('teams').select('key, game, coin_bonus, rev, updated_at').order('key'),
-      client.from('coach_log').select('team'),
+      client.from('teams').select('key, game, coin_bonus, rev, created_at, updated_at').order('key'),
+      client.from('coach_log').select('team, created_at'),
       client.from('class_settings').select('cls, coach, phase'),
     ])
     if (error) throw error
     const used: Record<string, number> = {}
-    for (const l of logs ?? []) used[l.team] = (used[l.team] ?? 0) + 1
+    const born = Object.fromEntries((teams ?? []).map(t => [t.key, t.created_at]))
+    for (const l of logs ?? []) if (born[l.team] && l.created_at >= born[l.team]) used[l.team] = (used[l.team] ?? 0) + 1 // 지금 팀을 만든 뒤의 기록만
     return json({
       // 목록에는 발표 그래프 이미지를 빼고 보낸다 (팀이 많으면 무거워서)
       teams: (teams ?? []).map(t => ({
@@ -148,7 +149,9 @@ async function admin(client: ReturnType<typeof db>, action: string, b: Record<st
 
   if (action === 'admin_log') {
     if (typeof b.key !== 'string') return fail(400, 'bad', '팀 이름이 없어요.')
-    const { data } = await client.from('coach_log').select('mode, message, reply, flagged, created_at').eq('team', b.key).order('created_at')
+    // 지금 팀을 만든 뒤의 대화만 보여 준다
+    const { data: t } = await client.from('teams').select('created_at').eq('key', b.key).maybeSingle()
+    const { data } = await client.from('coach_log').select('mode, message, reply, flagged, created_at').eq('team', b.key).gte('created_at', t?.created_at ?? '1970-01-01').order('created_at')
     return json({ log: data ?? [] })
   }
 

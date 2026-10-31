@@ -43,11 +43,16 @@ async function callClaude(system: string, messages: { role: string; content: str
       'anthropic-version': '2023-06-01',
       'content-type': 'application/json',
     },
-    body: JSON.stringify({ model: MODEL, max_tokens: 600, system, messages }),
+    // Haiku 5.5는 답하기 전에 먼저 생각(thinking)한다. 생각에 토큰을 다 쓰고 답이 비지 않도록
+    // 생각은 짧게(effort low) 하고 한도는 넉넉히 둔다. 답 길이는 RULES의 "8줄 이내"로 줄인다.
+    body: JSON.stringify({ model: MODEL, max_tokens: 4000, output_config: { effort: 'low' }, system, messages }),
   })
   if (!res.ok) throw new Error(`claude ${res.status}`)
   const data = await res.json()
-  return (data.content ?? []).filter((b: { type: string }) => b.type === 'text').map((b: { text: string }) => b.text).join('\n')
+  const text = (data.content ?? []).filter((b: { type: string }) => b.type === 'text').map((b: { text: string }) => b.text).join('\n').trim()
+  // 빈 답은 저장하지 않고 오류로 돌린다 (코인도 줄지 않는다)
+  if (!text) throw new Error(`claude empty reply (stop_reason: ${data.stop_reason})`)
+  return text
 }
 
 Deno.serve(async req => {
@@ -79,9 +84,10 @@ Deno.serve(async req => {
     if ((allCount ?? 0) >= GLOBAL_LIMIT) return fail(429, 'global_limit', '오늘은 코치를 더 쓸 수 없어요. 내일 다시 해 보세요.')
 
     // 이전 대화는 클라이언트가 보낸 것이 아니라 서버 기록에서 읽는다 (가짜 코치 발언 주입 방지)
+    // 지금 팀을 만든 뒤의 대화만 (같은 반·조로 다시 만든 팀에 예전 팀 대화가 섞이지 않게), 빈 답은 빼고
     const { data: prev } = await db.from('coach_log').select('message, reply')
-      .eq('team', team).eq('mode', mode).order('created_at', { ascending: false }).limit(3)
-    const past = (prev ?? []).reverse().flatMap(r => [
+      .eq('team', team).eq('mode', mode).gte('created_at', t.created_at).order('created_at', { ascending: false }).limit(3)
+    const past = (prev ?? []).filter(r => r.reply).reverse().flatMap(r => [
       { role: 'user', content: `<student_input>\n${r.message}\n</student_input>` },
       { role: 'assistant', content: r.reply },
     ])

@@ -62,11 +62,12 @@ npm run build
   - `ANTHROPIC_API_KEY` — 코치용. 없으면 코치만 "답을 가져오지 못했어요"가 나고 코인은 줄지 않는다
   - `COACH_MODEL` (선택, 기본 `claude-haiku-5-5`)
 
-## 남은 일
+## 배포
 
-1. **Vercel 배포:** Root Directory를 `app`으로, 환경변수 `VITE_API_URL`을 위 서버 주소로 넣는다. `/admindara` 주소는 `app/vercel.json`이 처리한다.
-2. **Secrets 넣기:** `ADMIN_PASSWORD`, `ANTHROPIC_API_KEY`.
-3. 관리자 화면·코치 답변을 실제 서버로 확인하기.
+- **학생 화면 (Vercel):** `main`에 push하면 자동으로 다시 배포된다. Root Directory `app`, 환경변수 `VITE_API_URL` = 위 서버 주소.
+- **서버 함수 (Supabase):** push해도 자동으로 배포되지 않는다. 함수 코드를 고쳤으면 위 "함수 배포"대로 다시 올린다.
+- 코치 모델(`claude-haiku-5-5`)은 답하기 전에 생각(thinking)을 하므로 `max_tokens`를 넉넉히(4000) 두고 `effort: low`로 짧게 생각하게 한다. 600으로 두면 생각에 다 써서 답이 빈다.
+- 코인과 코치 대화 기록은 **지금 팀을 만든 뒤의 것만** 센다. 같은 반·조로 팀을 지우고 다시 만들어도 예전 기록이 섞이지 않는다.
 
 ## 검사
 

@@ -45,7 +45,7 @@ async function sign(msg: string) {
 }
 export const makeToken = async (key: string, hash: string) => `${key}.${await sign(`${key}:${hash}`)}`
 
-export type TeamRow = { key: string; cls: string; hash: string; coin_bonus: number; rev: number }
+export type TeamRow = { key: string; cls: string; hash: string; coin_bonus: number; rev: number; created_at: string }
 
 // 토큰이 맞으면 그 팀의 행을, 아니면 null
 export async function teamOf(client: SupabaseClient, token: unknown): Promise<TeamRow | null> {
@@ -53,7 +53,7 @@ export async function teamOf(client: SupabaseClient, token: unknown): Promise<Te
   const dot = token.lastIndexOf('.')
   if (dot < 1) return null
   const key = token.slice(0, dot)
-  const { data } = await client.from('teams').select('key, cls, hash, coin_bonus, rev').eq('key', key).maybeSingle()
+  const { data } = await client.from('teams').select('key, cls, hash, coin_bonus, rev, created_at').eq('key', key).maybeSingle()
   if (!data) return null
   return same(token, await makeToken(key, data.hash)) ? data : null
 }
@@ -63,8 +63,9 @@ export async function settingsOf(client: SupabaseClient, cls: string) {
   return { ...DEFAULT_SETTINGS, ...(data ?? {}) }
 }
 
-// 코인: 쓴 개수는 코치 기록(coach_log)에서 세므로 브라우저가 바꿀 수 없다
+// 코인: 쓴 개수는 코치 기록(coach_log)에서 세므로 브라우저가 바꿀 수 없다.
+// 팀을 만든 뒤의 기록만 센다 (지운 팀과 같은 반·조로 다시 만들어도 예전 기록이 코인을 깎지 않게)
 export async function coinsOf(client: SupabaseClient, team: TeamRow) {
-  const { count } = await client.from('coach_log').select('id', { count: 'exact', head: true }).eq('team', team.key)
+  const { count } = await client.from('coach_log').select('id', { count: 'exact', head: true }).eq('team', team.key).gte('created_at', team.created_at)
   return { used: count ?? 0, bonus: team.coin_bonus }
 }
