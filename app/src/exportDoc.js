@@ -1,5 +1,5 @@
 ﻿import { getDs } from './data/meta.js'
-import { statFor, chartFor, isFreq, measureName, concernText, frameOf, missingOf, nameOf } from './doc.js'
+import { statFor, chartFor, isFreq, measureName, concernText, frameOf, missingOf, nameOf, usedColsOf, sceneAuto } from './doc.js'
 
 // 기획안을 Word(.docx)로 만든다. Drive에 올려 "Google 문서로 열기"를 하면 구글 문서에서 이어서 쓸 수 있다.
 // 번호와 제목은 [템플릿] 데이터 프로젝트 기획안 v2를 따른다. 4번(분석 결과)은 쓴 만큼만 채우고 나머지는 안내 문구를 둔다.
@@ -52,7 +52,8 @@ export function buildPlanDocx(g, docx) {
   }
 
   const members = g.members.map((m, i) => ({ ...m, n: nameOf(m, i) }))
-  const usedCols = g.usedCols.map(c => `${c.name}: ${c.meaning}`).join('\n')
+  const usedCols = usedColsOf(g).map(c => `${c.name}: ${c.meaning}`).join('\n')
+  const auto = sceneAuto(g)
   const blanks = ds ? ds.columns.filter(c => c.missing > 0).map(c => `${c.name} ${c.missing}개`).join(', ') : ''
   const spk = d.speakers ?? []
   const interp = [
@@ -78,17 +79,17 @@ export function buildPlanDocx(g, docx) {
 
     H1('1. 진로에서 탐구 질문 만들기'),
     H2('STEP 1. 팀원 진로 모으기'),
-    table([0.2, 0.35, 0.45], [['이름', '되고 싶은 직업·분야', '그 직업이 하는 일 (한 줄)'], ...members.map(m => [m.n, m.career, m.job])]),
+    table([0.2, 0.35, 0.45], [['이름', '되고 싶은 직업·분야', '그 직업이 하는 일 (선택)'], ...members.map(m => [m.n, m.career, m.job])]),
     ...P(`우리 팀의 진로 키워드: ${g.keyword}`, { bold: true }),
     H2('STEP 2. 데이터 고르기'),
     ...P(ds ? `${ds.field} 분야 → ${ds.id}.csv (${ds.desc})` : ''),
     H2('STEP 3. 진로 장면에서 궁금한 점'),
-    table([0.4, 0.6], [['떠올리기', '우리 팀의 답'], ['① 판단이 필요한 순간과 고민', concernText(g)], ['② 비교하고 싶은 집단', g.groupsAsk], ['③ 확인할 숫자', g.numberAsk]]),
+    table([0.4, 0.6], [['떠올리기', '우리 팀의 답'], ['① 판단이 필요한 순간과 고민', concernText(g)], ['② 비교하고 싶은 집단', auto.groups], ['③ 확인할 숫자', auto.number]]),
     H3('1-1. 우리 팀의 진로 키워드와 이유'), ...P(`${g.keyword} — ${g.keywordWhy}`),
     H3(`1-2. 우리 팀의 탐구 질문 (질문 틀 ${g.frame}: ${f.name})`), ...P(g.question, { bold: true }),
     H3('1-3. 이 질문이 진로에서 중요한 장면'), ...P(g.scene),
-    H3('1-4. 우리가 더 알고 싶은 질문 (선택)'), ...P(g.extraQ || '-'),
-    H3('1-5. 분석 전 예상'), ...P(g.expect),
+    H3('1-4. 분석 전 예상'), ...P(g.expect),
+    H3('1-5. 우리가 더 알고 싶은 질문 (선택)'), ...P(g.extraQ || '-'),
 
     H1('2. 사용할 데이터'),
     table([0.3, 0.7], [
@@ -96,7 +97,7 @@ export function buildPlanDocx(g, docx) {
       ['파일 이름', ds ? `${ds.id}.csv` : ''],
       ['한 행은 무엇을 뜻하나요?', g.rowMeaning],
       ['행 × 열 (shape)', ds ? `${ds.rows}행 × ${ds.columns.length}열` : ''],
-      ['사용할 열 3~4개', usedCols],
+      ['사용할 열', usedCols],
       ['결측값(NaN)이 있는 열 (isnull().sum())', blanks || '없음'],
     ]),
 
@@ -112,7 +113,7 @@ export function buildPlanDocx(g, docx) {
       ['⑦', '결과 읽는 방법', '가장 큰 그룹, 가장 작은 그룹, 그 차이(큰 값 − 작은 값)를 숫자로 말하기'],
       ...(g.extraCompare.trim() ? [['⑧', '더 비교해 보고 싶은 것', g.extraCompare]] : []),
     ]),
-    H3('3-3. 코드 미리 설계하기'), ...P(g.codeDesign, { mono: true }),
+    H3('3-3. 코드 미리 설계하기 (선택)'), ...P(g.codeDesign.trim() || '(쓰지 않았어요)', { mono: true }),
     H3('3-4. 필수 미션 체크'),
     ...P('☐ 미션 1 데이터 구조 확인   ☐ 미션 2 결측값(NaN) 확인·처리   ☐ 미션 3 그룹별 통계 1개   ☐ 미션 4 그래프 1개   ☐ 해석 2문장 + 한계 1문장'),
 
@@ -121,7 +122,7 @@ export function buildPlanDocx(g, docx) {
     table([0.3, 0.7], [['항목', '내용'], ['결측값(NaN)이 있던 열과 개수', blanks || '없음'], ['처리 방법', mm ? mm.ko : ''], ['그렇게 정한 이유', g.missingWhy]]),
     H3('4-2. 그룹별 통계 결과표'), ...P('노트북의 result 표를 복사해 붙여 넣으세요.', { italics: true, color: '667085' }), ...P(LATER),
     H3('4-3. 결과 읽기 (숫자로)'),
-    table([0.4, 0.6], [['읽을 것', '우리 팀 결과'], ['가장 큰 그룹과 값', d.hi ? `${d.hi}, ${d.hiVal ?? ''}` : LATER], ['가장 작은 그룹과 값', d.lo ? `${d.lo}, ${d.loVal ?? ''}` : LATER], ['차이 (큰 값 − 작은 값)', d.diffPts ? `${d.diffPts}점 (${d.diffX ?? ''}배)` : LATER], ['예상(1-5)과 같았나요? 놀라운 점은?', LATER]]),
+    table([0.4, 0.6], [['읽을 것', '우리 팀 결과'], ['가장 큰 그룹과 값', d.hi ? `${d.hi}, ${d.hiVal ?? ''}` : LATER], ['가장 작은 그룹과 값', d.lo ? `${d.lo}, ${d.loVal ?? ''}` : LATER], ['차이 (큰 값 − 작은 값)', d.diffPts ? `${d.diffPts}점 (${d.diffX ?? ''}배)` : LATER], ['예상(1-4)과 같았나요? 놀라운 점은?', LATER]]),
     H3('4-4. 그래프'), ...P('그래프를 오른쪽 클릭 → 이미지 복사 → 아래에 붙여 넣으세요.', { italics: true, color: '667085' }), ...P(LATER),
     H3('4-5. 해석 (3문장, 숫자 넣기)'), ...P(d.hi ? interp : LATER),
     H3('4-6. 한계 (1문장 이상)'), ...P(d.limit ? `다만 ${d.limit} 때문에 이 결과를 모든 대상에게 일반화하기 어렵다.` : LATER),

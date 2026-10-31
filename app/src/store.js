@@ -12,7 +12,7 @@ export const START = {
   keyword: '', keywordWhy: '',
   dataset: '',
   concern: '', groupsAsk: '', numberAsk: '',
-  concernParts: ['', ''], // 진로 장면 ①: 고민을 여러 칸에 (concern에는 합친 글이 들어간다)
+  concernParts: [''], // 진로 장면: 고민은 한 칸만 필수, 더 쓰면 칸이 늘어난다 (concern에는 합친 글이 들어간다)
   frame: 'A', groupBy: '', measure: '', stat: 'mean', chart: 'bar',
   measureMode: 'column', // 'column': 숫자 열의 통계 / 'freq': 그룹별 개수(빈도)
   statEtc: '', chartEtc: '', extraCompare: '',
@@ -21,7 +21,8 @@ export const START = {
   title: '',
   rowMeaning: '', usedCols: [],
   missingMethod: '', missingWhy: '', newCol: '', codeDesign: '',
-  deck: {}, // 발표 슬라이드 입력 (결과·해석·진로 연결·Q&A 등)  ai: { day: '', used: 0 }, chats: { plan: [], code: [] },
+  deck: {}, // 발표 슬라이드 입력 (결과·해석·진로 연결·Q&A 등)
+  ai: { day: '', used: 0 }, chats: { plan: [], code: [] }, // 코치 코인(하루 사용 횟수)과 대화 기록
 }
 
 // 새로 생긴 항목이 없는 예전 기록도 열리도록 기본값을 채운다

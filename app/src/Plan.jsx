@@ -1,7 +1,7 @@
 ﻿import { useMemo, useState } from 'react'
 import datasets from './data/datasets.json'
 import { FRAMES, STATS, CHARTS, MISSING, KIND_LABEL, getDs, getCol } from './data/meta.js'
-import { PLAN_STEPS, stepDone, draftQuestion, checkCodeDesign, buildPlanText, pct, statFor, chartFor, isFreq, hasMeasure, picksKey, frameOf, nameOf, missingOf, reviewState, MAX_REVIEWS, MAX_CONCERNS, concernText } from './doc.js'
+import { PLAN_STEPS, stepDone, draftQuestion, checkCodeDesign, buildPlanText, pct, statFor, chartFor, isFreq, hasMeasure, picksKey, frameOf, nameOf, missingOf, reviewState, MAX_REVIEWS, MAX_CONCERNS, concernText, usedColsOf } from './doc.js'
 import { reviewQuestion } from './coach.js'
 import { Text, Seg, Think, Stuck } from './ui.jsx'
 import { exportPlanDocx } from './exportDoc.js'
@@ -103,7 +103,7 @@ function CareerStep({ game, patch, setMember }) {
           <div key={i} className="crow">
             <b>{nameOf(m, i)}</b>
             <input aria-label={`${nameOf(m, i)} 되고 싶은 직업·분야`} value={m.career} maxLength={30} placeholder="되고 싶은 직업·분야 (예: 상담교사)" onChange={e => setMember(i, { career: e.target.value })} />
-            <input aria-label={`${nameOf(m, i)} 그 직업이 하는 일`} value={m.job} maxLength={50} placeholder="그 직업이 하는 일 (한 줄)" onChange={e => setMember(i, { job: e.target.value })} />
+            <input aria-label={`${nameOf(m, i)} 그 직업이 하는 일`} value={m.job} maxLength={50} placeholder="그 직업이 하는 일 (선택)" onChange={e => setMember(i, { job: e.target.value })} />
           </div>
         ))}
       </div>
@@ -115,7 +115,7 @@ function CareerStep({ game, patch, setMember }) {
       <div className="chips" aria-label="분야 예시">
         {fields.map(f => <button key={f} onClick={() => patch({ keyword: f })}>{f}</button>)}
       </div>
-      <Text label="1-1. 이 키워드를 고른 이유 (2~3문장)" rows={4} value={game.keywordWhy} onChange={v => patch({ keywordWhy: v })}
+      <Text label="1-1. 이 키워드를 고른 이유 (한두 문장)" rows={3} value={game.keywordWhy} onChange={v => patch({ keywordWhy: v })}
         hint="자유롭게 써도 되고, 어려우면 아래 문장 틀로 시작해요."
         frame={['우리 팀은 ', { key: 'f', ph: '분야', def: game.keyword }, ' 분야를 생각한다. ', { key: 'k', ph: '알고 싶은 것' }, '을(를) 알면 ', { key: 'w', ph: '어떤 때' }, '할 때 도움이 되기 때문이다.']} />
     </>
@@ -165,21 +165,8 @@ function DataStep({ game, patch, go }) {
   )
 }
 
-// 진로 장면 ①의 문장 틀 (고민 칸마다 쓸 수 있다)
+// 진로 장면의 문장 틀 (고민 칸마다 쓸 수 있다)
 const CONCERN_FRAME = ['이 일을 하는 사람은 ', { key: 's', ph: '어떤 상황' }, '일 때 ', { key: 'c', ph: '고민' }, '을(를) 가장 자주 고민한다. 왜냐하면 ', { key: 'y', ph: '이유' }, ' 때문이다.']
-
-// 숫자 예시: 수업에서 배운 통계와 "빈도"
-function StatExamples() {
-  return (
-    <div className="statex">
-      <b>숫자 예시 — 우리가 배운 것</b>
-      <ul>
-        {STATS.map(s => <li key={s.id}><b>{s.ko}</b> <span>{s.desc}</span></li>)}
-        <li><b>빈도</b> <span>숫자 열 없이 그룹마다 몇 명·몇 개인지 세는 것 (예: 장르별 영화 수, 학년별 학생 수)</span></li>
-      </ul>
-    </div>
-  )
-}
 
 function SceneStep({ game, patch }) {
   const parts = game.concernParts
@@ -190,34 +177,22 @@ function SceneStep({ game, patch }) {
   const addPart = () => patch(g => (g.concernParts.length >= MAX_CONCERNS ? {} : { concernParts: [...g.concernParts, ''] }))
   return (
     <>
-      <p className="hint">STEP 3. 아래 세 질문에 팀원이 돌아가며 답해 보세요. 이 답이 다음 단계의 질문이 돼요.</p>
-
-      <section className="scenebox" aria-label="① 가장 자주 고민하는 것">
-        <h3>① 이 직업을 가진 사람이 가장 자주 고민하는 것은?</h3>
-        <p className="hint">고민은 하나가 아니에요. 떠오르는 대로 여러 개를 써 봐요. (예: 학생이 공부를 어떻게 하게 도울까?)</p>
+      <p className="hint">STEP 3. 이 직업을 가진 사람의 고민을 떠올려요. 팀원이 돌아가며 말하고, <b>한 칸만 써도 충분해요.</b></p>
+      <section className="scenebox" aria-label="이 직업의 고민">
+        <h3>이 직업을 가진 사람이 가장 자주 고민하는 것은?</h3>
+        <p className="hint">예) 학생이 공부를 어떻게 하게 도울까? 고민이 더 떠오르면 아래 버튼으로 칸을 하나씩 늘려요.</p>
         {parts.map((v, i) => (
           <Text key={i} label={`고민 ${i + 1}`} rows={3} value={v} onChange={t => setPart(i, t)} frame={CONCERN_FRAME} />
         ))}
-        <button type="button" className="ghost" disabled={parts.length >= MAX_CONCERNS} onClick={addPart}>+ 고민 더 쓰기 ({parts.length}/{MAX_CONCERNS})</button>
+        {parts.length < MAX_CONCERNS && (
+          <button type="button" className="ghost" disabled={!parts[parts.length - 1].trim()} onClick={addPart}>+ 고민 더 쓰기</button>
+        )}
       </section>
-
-      <Text label="② 그 고민에서 비교하고 싶은 집단은? (두 집단 이상)" rows={4} value={game.groupsAsk} onChange={v => patch({ groupsAsk: v })}
-        hint="예) 공부 시간이 짧은 학생 vs 긴 학생. 비교하고 싶은 기준(성별, 학년, 지역 …)이 여러 개 떠오르면 모두 써요."
-        frame={[
-          [{ key: 'a', ph: '집단 A' }, '와(과) ', { key: 'b', ph: '집단 B' }, '을(를) 비교해 보고 싶다. 두 집단이 다르다면 ', { key: 'r', ph: '이유나 기대' }, ' 때문일 것이다.'],
-          ['또는 ', { key: 'k', ph: '기준(예: 학년, 지역)' }, '에 따라 ', { key: 'g', ph: '여러 집단' }, '이(가) 어떻게 다른지 보고 싶다.'],
-        ]} />
-
-      <Text label="③ 그 집단들의 어떤 숫자를 보면 도움이 될까?" rows={4} value={game.numberAsk} onChange={v => patch({ numberAsk: v })}
-        hint="숫자는 값의 크기(평균·최댓값 …)일 수도, 몇 명·몇 개인지(빈도)일 수도 있어요."
-        frame={[
-          [{ key: 't', ph: '대상(예: 성적)' }, '의 ', { key: 's', ph: '평균/중앙값/최댓값/최솟값/개수' }, '을(를) 보면 ', { key: 'd', ph: '어떤 판단' }, '에 도움이 될 것 같다.'],
-          ['숫자 값 대신 ', { key: 'g', ph: '집단(예: 학년)' }, '마다 ', { key: 'n', ph: '몇 명·몇 개' }, '인지 개수(빈도)를 세어 보고 싶다.'],
-        ]} />
-      <StatExamples />
+      <p className="hint">비교하고 싶은 집단과 확인할 숫자는 다음 단계에서 열을 고르면서 정해요.</p>
     </>
   )
 }
+
 function QuestionStep({ game, patch, go }) {
   const [fb, setFb] = useState(null)
   const ds = getDs(game.dataset)
@@ -267,7 +242,7 @@ function QuestionStep({ game, patch, go }) {
 
       <div className="field">
         <span className="lbl">1-2. 우리 팀의 탐구 질문 (필수, 한 문장)</span>
-        <p className="hint">질문을 써서 <b>검토를 받아요.</b> 검토는 최대 {MAX_REVIEWS}번 받을 수 있고, 통과하면 아래 단계가 열려요. 점검 기준은 이 4가지예요.</p>
+        <p className="hint">질문을 쓰고 <b>피드백을 받아요.</b> 한 번은 받아 보고, 마음에 들 때까지 고쳐서 최대 {MAX_REVIEWS}번까지 받을 수 있어요. 확인하는 기준은 이 4가지예요.</p>
         <ul className="criteria">
           <li>한 문장이에요 (10~80자)</li>
           <li>고른 열 이름이 질문에 그대로 들어 있어요</li>
@@ -275,33 +250,32 @@ function QuestionStep({ game, patch, go }) {
           <li>원인을 단정하지 않아요 ("때문에", "하면 오를까" 같은 말)</li>
         </ul>
         <div className="row start">
-          <button className="ghost" disabled={!game.groupBy || !hasMeasure(game) || rv.exhausted} onClick={() => patch({ question: draftQuestion(game) })}>초안 가져오기</button>
+          <button className="ghost" disabled={!game.groupBy || !hasMeasure(game)} onClick={() => patch({ question: draftQuestion(game) })}>초안 가져오기</button>
           <small className="muted">{draftQuestion(game)}</small>
         </div>
-        <textarea rows={3} aria-label="탐구 질문" value={game.question} maxLength={100} readOnly={rv.exhausted}
+        <textarea rows={3} aria-label="탐구 질문" value={game.question} maxLength={100}
           onChange={e => patch({ question: e.target.value })} placeholder="예: 공부 시간 구간(studytime)별로 최종 성적(G3)의 평균은 어떻게 다를까?" />
         <div className="reviewbar">
-          <span className="dots" role="img" aria-label={`검토 기회 ${rv.left}번 남음`}>
+          <span className="dots" role="img" aria-label={`피드백 기회 ${rv.left}번 남음`}>
             {Array.from({ length: MAX_REVIEWS }, (_, i) => <i key={i} className={i < game.reviews.length ? 'used' : ''} />)}
           </span>
-          <b>검토 기회 {rv.left}/{MAX_REVIEWS}</b>
+          <b>피드백 기회 {rv.left}/{MAX_REVIEWS}</b>
           <span className="spacer" />
           <button className="primary" disabled={!game.groupBy || !hasMeasure(game) || game.question.trim().length < 2 || rv.exhausted || rv.same} onClick={review}>
-            {rv.same ? '검토 완료 (고치면 다시 받을 수 있어요)' : '검토 받기'}
+            {rv.same ? '피드백 받음 (고치면 다시 받을 수 있어요)' : rv.exhausted ? '기회를 모두 썼어요' : '피드백 받기'}
           </button>
         </div>
         {(!game.groupBy || !hasMeasure(game)) && <p className="warn small">먼저 위에서 묶는 기준과 계산할 것(통계 또는 빈도)을 골라요.</p>}
         {shown && (
           <div className={`review ${shown.pass ? 'pass' : ''}`} role="status">
-            <b>{shown.pass ? '통과했어요' : `점검 ${shown.score}/4`}</b>
+            <b>{shown.pass ? '4가지 기준을 모두 지켰어요' : `4가지 중 ${shown.score}가지를 지켰어요`}</b>
             <ul className="checks">{shown.checks.map(c => <li key={c.label} className={c.ok ? 'ok' : 'no'}>{c.ok ? '✓' : '○'} {c.label}</li>)}</ul>
             <b>코치의 되묻기</b>
             <ul>{shown.asks.map(a => <li key={a}>{a}</li>)}</ul>
           </div>
         )}
-        {rv.exhausted && !rv.last?.pass && <p className="warn" role="status">검토 기회를 모두 썼어요. 못 지킨 항목(○)을 알고 계속해요. 선생님과 이야기해 보면 좋아요.</p>}
         {game.reviews.length > 0 && (
-          <details className="rlog"><summary>검토 기록 ({game.reviews.length}회)</summary>
+          <details className="rlog"><summary>피드백 기록 ({game.reviews.length}회)</summary>
             <ol>{game.reviews.map((r, i) => <li key={i}><b>{r.score}/4</b> {r.text}</li>)}</ol>
           </details>
         )}
@@ -316,21 +290,23 @@ function QuestionStep({ game, patch, go }) {
 
       {rv.accepted ? (
         <>
-@'
-$new2 = @'
+          <Text label="1-3. 이 질문이 진로에서 중요한 장면 (1~2문장)" rows={3} value={game.scene} onChange={v => patch({ scene: v })}
+            hint="우리 진로의 어떤 장면에서 이 질문의 답이 쓰이나요? 어려우면 아래 문장 틀로 시작해요."
+            frame={[{ key: 'j', ph: '직업', def: game.keyword }, '이(가) ', { key: 'd', ph: '하는 일' }, '을(를) 할 때 ', { key: 'k', ph: '알아야 할 것' }, '을(를) 알면 ', { key: 'c', ph: '할 수 있는 것' }, '. 그래서 ', { key: 'g', ph: '묶는 기준', def: game.groupBy }, '별로 ', { key: 'm', ph: '계산할 열', def: game.measure }, '을(를) 비교해 보려고 한다.']} />
+          <Text label="1-4. 분석 전 예상과 이유 (한두 문장)" rows={3} value={game.expect} onChange={v => patch({ expect: v })}
+            hint="분석하기 전에 결과를 예상해 보면, 분석 뒤 맞았는지 비교할 수 있어요."
+            frame={[{ key: 'g', ph: '묶는 기준', def: game.groupBy }, '이(가) ', { key: 'u', ph: '어떤 쪽' }, ' ', { key: 'm', ph: '계산할 열', def: game.measure }, '이(가) ', { key: 'r', ph: '높을/낮을/클' }, ' 것이다. 이유: ', { key: 'y', ph: '이유' }, '.']} />
+          <details className="optional">
+            <summary>1-5. 더 알고 싶은 질문 <small className="muted">(선택 · 시간이 남으면)</small></summary>
+            <Text label="같은 데이터의 다른 열로 질문을 하나 더 만들어 보세요" rows={2} value={game.extraQ} onChange={v => patch({ extraQ: v })} />
+          </details>
         </>
       ) : (
         <div className="locked" role="status">
-          <b>🔒 질문 검토를 통과하면 열려요</b>
-          <p>1-3 진로 장면, 1-4 더 알고 싶은 질문, 1-5 분석 전 예상이 이어서 나와요. 위에서 질문을 쓰고 "검토 받기"를 눌러요. 기회는 {MAX_REVIEWS}번이고, 모두 쓰면 그대로 내려갈 수 있어요.</p>
+          <b>🔒 피드백을 한 번 받으면 이어서 나와요</b>
+          <p>위에서 질문을 쓰고 "피드백 받기"를 눌러 보세요. 다음에 1-3 진로 장면, 1-4 분석 전 예상이 나와요.</p>
         </div>
-      )}      <Text label="1-3. 이 질문이 진로에서 중요한 장면 (3문장)" rows={5} value={game.scene} onChange={v => patch({ scene: v })}
-        hint="우리 진로의 어떤 장면에서 이 질문의 답이 쓰이나요? 어려우면 아래 문장 틀로 시작해요."
-        frame={[{ key: 'j', ph: '직업', def: game.keyword }, '이(가) ', { key: 'd', ph: '하는 일' }, '을(를) 할 때 ', { key: 'k', ph: '알아야 할 것' }, '을(를) 알면 ', { key: 'c', ph: '할 수 있는 것' }, '. 그래서 ', { key: 'g', ph: '묶는 기준', def: game.groupBy }, '별로 ', { key: 'm', ph: '계산할 열', def: game.measure }, '을(를) 비교해 보려고 한다.']} />
-      <Text label="1-4. 더 알고 싶은 질문 (선택)" rows={2} value={game.extraQ} onChange={v => patch({ extraQ: v })} hint="같은 파일의 다른 열로 질문을 하나 더 만들어 보세요. 시간이 되면 분석해요." />
-      <Text label="1-5. 분석 전 예상과 이유" rows={4} value={game.expect} onChange={v => patch({ expect: v })}
-        hint="분석하기 전에 결과를 예상해 보면, 분석 뒤 맞았는지 비교할 수 있어요."
-        frame={[{ key: 'g', ph: '묶는 기준', def: game.groupBy }, '이(가) ', { key: 'u', ph: '어떤 쪽' }, ' ', { key: 'm', ph: '계산할 열', def: game.measure }, '이(가) ', { key: 'r', ph: '높을/낮을/클' }, ' 것이다. 이유: ', { key: 'y', ph: '이유' }, '.']} />
+      )}
     </>
   )
 }
@@ -338,45 +314,46 @@ $new2 = @'
 function UnderstandStep({ game, patch, go }) {
   const ds = getDs(game.dataset)
   if (!ds) return <p className="warn">먼저 데이터를 골라 주세요. <button className="link" onClick={() => go('data')}>데이터 고르기로 가기</button></p>
-  const used = game.usedCols
-  const toggle = c => patch(g => (g.usedCols.some(u => u.name === c.name)
-    ? { usedCols: g.usedCols.filter(u => u.name !== c.name) }
-    : g.usedCols.length >= 4 ? {} : { usedCols: [...g.usedCols, { name: c.name, meaning: c.meaning }] }))
-  const fromQuestion = () => patch(g => ({
-    usedCols: [g.groupBy, g.measure].filter(Boolean).map(n => g.usedCols.find(u => u.name === n) ?? { name: n, meaning: getCol(ds, n)?.meaning ?? '' }),
-  }))
-  const setMeaning = (name, meaning) => patch(g => ({ usedCols: g.usedCols.map(u => (u.name === name ? { ...u, meaning } : u)) }))
+  const used = usedColsOf(game)
+  const toggle = c => patch(g => {
+    const base = usedColsOf(g)
+    if (base.some(u => u.name === c.name)) return { usedCols: base.filter(u => u.name !== c.name) }
+    return base.length >= 6 ? {} : { usedCols: [...base, { name: c.name, meaning: c.meaning }] }
+  })
   const blanks = ds.columns.filter(c => c.missing > 0)
   return (
     <>
-      <p className="hint">노트북 미션 0~1(<code>head</code>, <code>shape</code>, <code>columns</code>, <code>info</code>)을 실행한 뒤 함께 보며 채워요. 아래 값은 미리 본 값이니 노트북 결과와 같은지 확인해요.</p>
+      <p className="hint">가볍게 확인하는 단계예요. 아래 값은 미리 본 값이라, 노트북 미션 0~1(<code>head</code>, <code>shape</code>, <code>info</code>)을 실행했을 때와 같은지만 보면 돼요. 꼭 써야 하는 건 <b>한 행의 뜻 하나</b>예요.</p>
       <dl className="facts wide">
         <div><dt>파일 이름</dt><dd><code>{ds.id}.csv</code></dd></div>
         <div><dt>행 × 열 (shape)</dt><dd>{ds.rows.toLocaleString()}행 × {ds.columns.length}열</dd></div>
         <div><dt>결측값이 있는 열</dt><dd>{blanks.length ? blanks.map(c => `${c.name} ${c.missing}개`).join(', ') : '없음'}</dd></div>
       </dl>
-      <Text label="한 행은 무엇을 뜻하나요?" value={game.rowMeaning} max={60} onChange={v => patch({ rowMeaning: v })} hint="예) 학생 1명의 기록 1건 / 영화 1편 / 팀의 한 시즌" />
+      <Text label="한 행은 무엇을 뜻하나요? (필수)" value={game.rowMeaning} max={60} onChange={v => patch({ rowMeaning: v })} hint="예) 학생 1명의 기록 1건 / 영화 1편 / 팀의 한 시즌" />
       <div className="field">
-        <span className="lbl">사용할 열 3~4개 ({used.length}/4)</span>
-        <p className="hint">열 이름 · 뜻 · 숫자인지 글자인지. 눌러서 고르고, 뜻은 우리 말로 고쳐 써도 돼요.</p>
-        <button className="ghost" onClick={fromQuestion} disabled={!game.groupBy || !hasMeasure(game)}>질문에서 고른 열 넣기</button>
-        <div className="colgrid">
-          {ds.columns.map(c => {
-            const on = used.some(u => u.name === c.name)
-            return (
-              <button key={c.name} aria-pressed={on} className={`col ${on ? 'on' : ''}`} onClick={() => toggle(c)}>
-                <code>{c.name}</code><span>{c.meaning}</span><small>{KIND_LABEL[c.kind]}{c.missing ? ` · 결측값 ${c.missing}` : ''}</small>
-              </button>
-            )
-          })}
-        </div>
+        <span className="lbl">사용할 열</span>
+        <p className="hint">질문에서 고른 열이 자동으로 들어갔어요. 더 쓰고 싶은 열이 있을 때만 아래에서 추가해요. (선택)</p>
+        {used.length === 0 && <p className="muted small">아직 고른 열이 없어요. 앞 단계에서 묶는 기준과 계산할 것을 골라요.</p>}
         {used.map(u => (
           <div key={u.name} className="mrow">
             <code>{u.name}</code>
-            <input aria-label={`${u.name}의 뜻`} value={u.meaning} onChange={e => setMeaning(u.name, e.target.value)} />
+            <span>{u.meaning}</span>
             <small className="muted">{getCol(ds, u.name)?.kind === 'number' ? '숫자' : '글자'}</small>
           </div>
         ))}
+        <details className="optional">
+          <summary>사용할 열 더 추가하기 (선택)</summary>
+          <div className="colgrid">
+            {ds.columns.map(c => {
+              const on = used.some(u => u.name === c.name)
+              return (
+                <button key={c.name} type="button" aria-pressed={on} className={`col ${on ? 'on' : ''}`} onClick={() => toggle(c)}>
+                  <code>{c.name}</code><span>{c.meaning}</span><small>{KIND_LABEL[c.kind]}{c.missing ? ` · 결측값 ${c.missing}` : ''}</small>
+                </button>
+              )
+            })}
+          </div>
+        </details>
       </div>
     </>
   )
@@ -415,11 +392,11 @@ function MethodStep({ game, patch, go }) {
         frame={['또한 ', { key: 'a', ph: '다른 통계/그래프/기준' }, '으로(로) 비교해서 ', { key: 'b', ph: '알고 싶은 것' }, '을(를) 확인해 보고 싶다.']} />
 
       <div className="field">
-        <span className="lbl">3-3. 코드 미리 설계하기</span>
-        <p className="hint">아래 틀의 괄호를 우리 팀 선택으로 바꿔서 직접 써 보세요. 열 이름은 대소문자와 띄어쓰기까지 똑같이!</p>
+        <span className="lbl">3-3. 코드 미리 설계하기 <small className="muted">(선택 · 시간이 남으면)</small></span>
+        <p className="hint">안 써도 괜찮아요. 쓰면 노트북에서 코딩할 때 도움이 돼요. 아래 틀의 괄호를 우리 팀 선택으로 바꿔서 써 보세요. 열 이름은 대소문자와 띄어쓰기까지 똑같이!</p>
         <pre className="frame">{isFreq(game) ? `result = df["(묶는 기준)"].value_counts()\nresult.plot(kind="(그래프 종류)")` : `result = df.groupby("(묶는 기준)")["(계산할 열)"].(통계 함수)()\nresult.plot(kind="(그래프 종류)")`}</pre>
         <textarea rows={3} aria-label="코드 설계" value={game.codeDesign} onChange={e => patch({ codeDesign: e.target.value })} spellCheck={false} className="mono" />
-        <ul className="checks">{checks.map(c => <li key={c.label} className={c.ok ? 'ok' : 'no'}>{c.ok ? '✓' : '○'} {c.label}</li>)}</ul>
+        {game.codeDesign.trim() && <ul className="checks">{checks.map(c => <li key={c.label} className={c.ok ? 'ok' : 'no'}>{c.ok ? '✓' : '○'} {c.label}</li>)}</ul>}
       </div>
       <div className="mission">
         <b>3-4. 필수 미션</b>
@@ -474,8 +451,8 @@ const STUCK = {
   team: [['인원수가 정해지지 않았어요', '일단 지금 모인 사람 수로 고르고, 나중에 바꿔도 돼요.']],
   career: [['진로가 아직 없어요', '"관심 있는 분야"로 써도 돼요. 좋아하는 과목이나 자주 찾아보는 주제를 적어 보세요.'], ['팀원 진로가 모두 달라요', '직업 이름 말고 "하는 일"을 비교해 보세요. 사람을 돕는 일, 자료를 분석하는 일처럼 공통점이 보일 수 있어요.']],
   data: [['어떤 데이터를 골라야 할지 모르겠어요', '"추천" 표시가 붙은 분야부터 열어 보세요. 열 목록의 뜻을 읽고, 질문이 떠오르는 데이터를 고르면 돼요.'], ['고른 뒤에 바꾸고 싶어요', '다른 데이터를 누르면 바뀌어요. 이미 고른 열은 새로 골라야 해요.']],
-  scene: [['세 질문에 답하기 어려워요', '그 직업의 하루를 상상해 보세요. 어떤 선택을 해야 할 때 "숫자로 알면 좋겠다"는 생각이 들까요?']],
-  question: [['어떤 열을 골라야 할지 모르겠어요', '선생님 추천 짝부터 시작해 보세요. 열의 뜻을 읽고 STEP 3에서 쓴 ②(집단)와 ③(숫자)에 맞는 열을 찾으면 돼요.'], ['질문이 너무 넓어요', '"무엇으로 묶고, 어떤 숫자를 비교할지" 한 쌍으로 줄여요.'], ['점검표 ○가 안 없어져요', '고른 열 이름이 질문 문장에 그대로 들어가야 해요. 초안 가져오기를 눌러 확인해 보세요.']],
+  scene: [['고민이 떠오르지 않아요', '그 직업의 하루를 상상해 보세요. 어떤 선택을 해야 할 때 "숫자로 알면 좋겠다"는 생각이 들까요? 한 칸만 써도 충분해요.']],
+  question: [['어떤 열을 골라야 할지 모르겠어요', '선생님 추천 짝부터 시작해 보세요. 열의 뜻을 읽고, 앞 단계에서 떠올린 고민을 풀어 줄 열(묶는 기준)과 숫자를 찾으면 돼요.'], ['질문이 너무 넓어요', '"무엇으로 묶고, 어떤 숫자를 비교할지" 한 쌍으로 줄여요.'], ['피드백에서 ○가 있어요', '○는 고치면 좋은 점이에요. 고른 열 이름이 질문 문장에 그대로 들어갔는지 보고, 고친 뒤 다시 피드백을 받아도 돼요.']],
   understand: [['열 뜻이 어려워요', '데이터 고르기 단계의 "열 목록" 뜻을 읽어 보세요. 우리 말로 쉽게 바꿔 써도 돼요.']],
   method: [['결측값(NaN) 처리를 무엇으로 해야 할지 모르겠어요', '결측값(NaN)이 5% 이하이고 계산할 열이 아니면 "그대로 두기"가 무난해요. 확신이 없으면 이유를 솔직하게 쓰면 돼요.'], ['코드 설계 점검이 계속 ○예요', '틀의 괄호를 우리가 고른 열 이름·함수 이름으로 바꿔 썼는지 확인해요. 따옴표 안에 열 이름이 정확히 들어가야 해요.']],
   summary: [['빠진 단계가 있어요', '위의 "아직 덜 쓴 단계"를 눌러 이동해요.']],

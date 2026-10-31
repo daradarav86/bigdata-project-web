@@ -1,6 +1,6 @@
 ﻿import { useRef, useState } from 'react'
 import { getDs, LIMITS } from './data/meta.js'
-import { statFor, missingOf, nameOf, measureName, concernMain, isFreq } from './doc.js'
+import { statFor, missingOf, nameOf, measureName, concernMain, isFreq, usedColsOf } from './doc.js'
 import { Text } from './ui.jsx'
 
 // 그래프 이미지를 줄여서 저장한다 (브라우저 저장 용량 보호)
@@ -61,7 +61,7 @@ function slides({ g, d, ds }) {
           <Title kw="질문" rest="과 데이터" />
           <p className="s-q small"><V v={g.question} ph="탐구 질문" /></p>
           <p>데이터: <V v={ds && `${ds.id}.csv`} /> | 한 행 = <V v={g.rowMeaning} /> | <V v={ds && ds.rows.toLocaleString()} />행 × <V v={ds && ds.columns.length} />열</p>
-          <ul className="s-list">{g.usedCols.map(c => <li key={c.name}><code>{c.name}</code> {c.meaning}</li>)}</ul>
+          <ul className="s-list">{usedColsOf(g).map(c => <li key={c.name}><code>{c.name}</code> {c.meaning}</li>)}</ul>
           <p>숫자 요약: <code>{measureName(g) || '(열)'}</code> 값 <V v={d.cnt} />개, 평균 <V v={d.mean} /> · 중앙값 <V v={d.median} /> → <V v={d.pick} ph="평균/중앙값" />으로 요약</p>
         </>
       ),
