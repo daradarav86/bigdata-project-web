@@ -11,6 +11,7 @@ export const START = {
   team: '', size: 4, members: Array.from({ length: 4 }, member), pledge: false,
   keyword: '', keywordWhy: '',
   dataset: '',
+  dataQA: {}, // 데이터 확인 기록: 데이터 id → { viewed: 열 목록을 열어 봤는지, ans: { 질문 id → 고른 보기 } }
   concern: '', groupsAsk: '', numberAsk: '',
   concernParts: [''], // 진로 장면: 고민은 한 칸만 필수, 더 쓰면 칸이 늘어난다 (concern에는 합친 글이 들어간다)
   frame: 'A', groupBy: '', measure: '', stat: 'mean', chart: 'bar',

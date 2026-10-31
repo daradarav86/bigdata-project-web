@@ -1,5 +1,6 @@
 ﻿import { getDs, getCol, FRAMES, STATS, CHARTS, MISSING } from './data/meta.js'
 import { fixJosa } from './josa.js'
+import { quizState } from './data/dataQuiz.js'
 
 export const MAX_REVIEWS = 5
 
@@ -44,6 +45,9 @@ export function reviewState(g) {
   const got = g.reviews.some(r => r.picks === picksKey(g))
   return { last, left, same, got, accepted: got || left <= 0, exhausted: left <= 0 }
 }
+
+// 데이터 확인: 고른 데이터를 열어 보고, 간단한 질문 2개에 맞게 답해야 다음 단계로 넘어갈 수 있다
+export const dataCheck = g => quizState(getDs(g.dataset), g.dataQA?.[g.dataset])
 
 // 사용할 열: 학생이 따로 고르지 않았으면 질문에서 고른 열(묶는 기준, 계산할 열)을 자동으로 쓴다
 export function usedColsOf(g) {
@@ -143,7 +147,7 @@ export function stepDone(id, g) {
   switch (id) {
     case 'team': return filled(g.team) && g.members.every(m => m.name.trim()) && g.pledge
     case 'career': return g.members.every(m => m.career.trim()) && filled(g.keyword, g.keywordWhy)
-    case 'data': return !!g.dataset
+    case 'data': return !!g.dataset && dataCheck(g).passed
     case 'scene': return g.concernParts[0].trim().length >= 2 && filled(g.groupsAsk, g.numberAsk)
     case 'question': return !!g.groupBy && hasMeasure(g) && reviewState(g).accepted && filled(g.scene, g.expect)
     case 'understand': return filled(g.rowMeaning) && g.usedCols.length >= 3

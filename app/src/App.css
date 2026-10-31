@@ -359,3 +359,12 @@ details summary { cursor: pointer; }
 .example dd { margin: 0; white-space: pre-wrap; font-size: .92rem; }
 .exblock { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
 .cw-suggest { display: grid; gap: 4px; }
+
+/* ---------- 데이터 확인(필수 관문) ---------- */
+.datacheck { border: 2px solid var(--blue); border-radius: 14px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.datacheck h3 { margin: 0; }
+.quizq { display: grid; gap: 6px; }
+.quizq p { margin: 0; }
+.seg button.right { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, var(--card)); }
+.seg button.wrong { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, var(--card)); }
+.steps li button.locked { opacity: .5; cursor: not-allowed; }

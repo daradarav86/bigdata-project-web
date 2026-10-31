@@ -1,7 +1,7 @@
 ﻿import { useMemo, useState } from 'react'
 import datasets from './data/datasets.json'
 import { FRAMES, STATS, CHARTS, MISSING, KIND_LABEL, getDs, getCol } from './data/meta.js'
-import { PLAN_STEPS, stepDone, draftQuestion, checkCodeDesign, buildPlanText, pct, statFor, chartFor, isFreq, hasMeasure, picksKey, frameOf, nameOf, missingOf, reviewState, MAX_REVIEWS, MAX_CONCERNS, concernText, axisOptions, axisOf } from './doc.js'
+import { PLAN_STEPS, stepDone, draftQuestion, checkCodeDesign, buildPlanText, pct, statFor, chartFor, isFreq, hasMeasure, picksKey, frameOf, nameOf, missingOf, reviewState, MAX_REVIEWS, MAX_CONCERNS, concernText, axisOptions, axisOf, dataCheck } from './doc.js'
 import { reviewQuestion } from './coach.js'
 import { Text, Seg, Think, Stuck } from './ui.jsx'
 import { exportPlanDocx } from './exportDoc.js'
@@ -128,6 +128,16 @@ function DataStep({ game, patch, go }) {
   const mine = useMemo(() => tokens([game.keyword, ...game.members.flatMap(m => [m.career, m.job])].join(' ')), [game.keyword, game.members])
   const score = d => mine.filter(t => (d.field + d.careers.join(' ')).includes(t) || d.field.includes(t)).length
   const choose = id => id !== game.dataset && patch({ dataset: id, groupBy: '', measure: '', usedCols: [], codeDesign: '' })
+  // 데이터 확인 기록은 데이터마다 따로 저장한다 (다른 데이터로 바꾸면 그 데이터를 다시 확인해야 한다)
+  const { quiz, viewed, ans, correct, passed } = dataCheck(game)
+  const qa = { viewed, ans }
+  // 항상 "가장 최근 저장값"에 합친다 (빠르게 연달아 눌러도 앞의 답이 사라지지 않게)
+  const updateQA = fn => patch(g => {
+    const cur = g.dataQA?.[g.dataset] ?? { viewed: false, ans: {} }
+    return { dataQA: { ...g.dataQA, [g.dataset]: fn(cur) } }
+  })
+  const setViewed = () => updateQA(cur => ({ ...cur, viewed: true }))
+  const setAns = (id, o) => updateQA(cur => ({ ...cur, ans: { ...cur.ans, [id]: o } }))
   return (
     <>
       <p className="hint">STEP 2. 진로에 맞는 데이터를 하나 골라요. 입력한 진로와 맞는 분야에는 <span className="recmark">추천</span>이 붙어요.</p>
@@ -149,7 +159,7 @@ function DataStep({ game, patch, go }) {
             <div><dt>분석 예시</dt><dd>{ds.example}</dd></div>
             {ds.pair && <div><dt>추천 짝</dt><dd>묶는 기준 <code>{ds.pair.groupBy}</code> → 계산할 열 <code>{ds.pair.measure}</code></dd></div>}
           </dl>
-          <details><summary>열 목록과 앞 5행 보기</summary>
+          <details onToggle={e => { if (e.currentTarget.open && !qa.viewed) setViewed() }}><summary>열 목록과 앞 5행 보기 <small className="muted">(꼭 열어 봐요)</small></summary>
             <ColTable ds={ds} />
             <div className="tablewrap preview">
               <table>
@@ -159,7 +169,36 @@ function DataStep({ game, patch, go }) {
             </div>
           </details>
           {ds.id === 'movies' && <p className="warn small">묶을 범주 열이 거의 없는 데이터예요. describe()와 히스토그램으로 분포를 살펴보는 질문이 어울려요.</p>}
-          <button className="primary" onClick={() => go('scene')}>다음: 진로 장면 떠올리기</button>
+        </section>
+      )}
+
+      {ds && (
+        <section className="datacheck" aria-label="데이터 확인하기">
+          <h3>데이터 확인하기 <small className="muted">(꼭 해야 다음으로 넘어가요)</small></h3>
+          <p className="hint">고른 데이터를 제대로 봤는지 확인해요. 위의 <b>"열 목록과 앞 5행 보기"</b>를 열어서 살펴보고, 아래 질문 2개에 답해요.</p>
+          <p className={qa.viewed ? 'ok-msg small' : 'warn small'} role="status">{qa.viewed ? '✓ 데이터를 열어 봤어요' : '○ 먼저 위의 "열 목록과 앞 5행 보기"를 열어 봐요'}</p>
+          {quiz.map((q, n) => {
+            const picked = qa.ans?.[q.id]
+            const ok = picked === q.answer
+            return (
+              <div key={q.id} className="quizq">
+                <b>{n + 1}. {q.text}</b>
+                <div className="seg" role="radiogroup" aria-label={q.text}>
+                  {q.options.map(o => (
+                    <button key={o} type="button" role="radio" aria-checked={picked === o} disabled={!qa.viewed}
+                      className={picked === o ? (ok ? 'on right' : 'on wrong') : ''} onClick={() => setAns(q.id, o)}><b>{o}</b></button>
+                  ))}
+                </div>
+                {picked && (ok
+                  ? <p className="ok-msg small" role="status">✓ 맞아요</p>
+                  : <p className="warn small" role="status">아니에요. 다시 찾아봐요 — {q.where}</p>)}
+              </div>
+            )
+          })}
+          {passed
+            ? <p className="ok-msg" role="status">데이터 확인을 마쳤어요. 이제 다음 단계로 갈 수 있어요.</p>
+            : <p className="muted small">질문 2개를 모두 맞히면 다음 단계가 열려요. ({correct}/{quiz.length})</p>}
+          <button className="primary" disabled={!passed} onClick={() => go('scene')}>다음: 진로 장면 떠올리기</button>
         </section>
       )}
     </>
@@ -542,7 +581,7 @@ function SummaryStep({ game, patch, go }) {
 const STUCK = {
   team: [['인원수가 정해지지 않았어요', '일단 지금 모인 사람 수로 고르고, 나중에 바꿔도 돼요.']],
   career: [['진로가 아직 없어요', '"관심 있는 분야"로 써도 돼요. 좋아하는 과목이나 자주 찾아보는 주제를 적어 보세요.'], ['팀원 진로가 모두 달라요', '직업 이름 말고 "하는 일"을 비교해 보세요. 사람을 돕는 일, 자료를 분석하는 일처럼 공통점이 보일 수 있어요.']],
-  data: [['어떤 데이터를 골라야 할지 모르겠어요', '"추천" 표시가 붙은 분야부터 열어 보세요. 열 목록의 뜻을 읽고, 질문이 떠오르는 데이터를 고르면 돼요.'], ['고른 뒤에 바꾸고 싶어요', '다른 데이터를 누르면 바뀌어요. 이미 고른 열은 새로 골라야 해요.']],
+  data: [['확인 질문의 답을 모르겠어요', '"열 목록과 앞 5행 보기"를 열어서 표를 천천히 살펴봐요. 틀리면 어디서 찾을 수 있는지 알려 줘요. 몇 번이든 다시 고를 수 있어요.'], ['어떤 데이터를 골라야 할지 모르겠어요', '"추천" 표시가 붙은 분야부터 열어 보세요. 열 목록의 뜻을 읽고, 질문이 떠오르는 데이터를 고르면 돼요.'], ['고른 뒤에 바꾸고 싶어요', '다른 데이터를 누르면 바뀌어요. 이미 고른 열은 새로 골라야 해요.']],
   scene: [['고민이 떠오르지 않아요', '그 직업의 하루를 상상해 보세요. 어떤 선택을 해야 할 때 "숫자로 알면 좋겠다"는 생각이 들까요? 한 칸만 써도 충분해요.']],
   question: [['어떤 열을 골라야 할지 모르겠어요', '선생님 추천 짝부터 시작해 보세요. 열의 뜻을 읽고, 앞 단계에서 떠올린 고민을 풀어 줄 열(묶는 기준)과 숫자를 찾으면 돼요.'], ['질문이 너무 넓어요', '"무엇으로 묶고, 어떤 숫자를 비교할지" 한 쌍으로 줄여요.'], ['피드백에서 ○가 있어요', '○는 고치면 좋은 점이에요. 고른 열 이름이 질문 문장에 그대로 들어갔는지 보고, 고친 뒤 다시 피드백을 받아도 돼요.']],
   understand: [['"한 행"이 무슨 뜻이에요?', '표에서 가로로 한 줄을 "행"이라고 해요. 위에 보여 준 첫 번째 행을 보고, 그 한 줄이 학생 1명인지 영화 1편인지 어떤 한 번의 측정인지 말해 보세요.'], ['열 뜻이 어려워요', '데이터 고르기 단계의 "열 목록" 뜻을 읽어 보세요. 우리 말로 쉽게 바꿔 써도 돼요.'], ['어떤 열을 골라야 해요?', '질문에서 쓴 열(묶는 기준, 계산할 열)은 꼭 넣고, 그 밖에 질문과 관련 있어 보이는 열을 1~2개 더 골라요. "질문에서 고른 열 넣기" 버튼이 도와줘요.']],
@@ -587,7 +626,15 @@ export default function Plan(props) {
   const Step = RIGHT[id]
   const done = PLAN_STEPS.filter(s => stepDone(s.id, game)).length
   // 단계 안에서 다른 단계나 발표로 이동할 때 쓰는 go
-  const go = target => (target === 'deck' ? goTab('deck') : setId(target))
+  // 데이터 확인(필수)을 마치기 전에는 그 뒤 단계로 갈 수 없다. 안쪽 링크로도 우회하지 못하게 여기서 막는다.
+  const dataIdx = PLAN_STEPS.findIndex(s => s.id === 'data')
+  const dataOk = stepDone('data', game)
+  const isLocked = i => i > dataIdx && !dataOk
+  const go = target => {
+    if (target === 'deck') return goTab('deck')
+    const ti = PLAN_STEPS.findIndex(s => s.id === target)
+    return setId(isLocked(ti) ? 'data' : target)
+  }
   return (
     <div className="plan">
       <nav className="steps" aria-label="기획 단계">
@@ -595,8 +642,9 @@ export default function Plan(props) {
         <ol>
           {PLAN_STEPS.map((s, i) => (
             <li key={s.id}>
-              <button className={`${s.id === id ? 'cur' : ''} ${stepDone(s.id, game) ? 'done' : ''}`} aria-current={s.id === id ? 'step' : undefined} onClick={() => setId(s.id)}>
-                <span className="dot">{stepDone(s.id, game) ? '✓' : i + 1}</span>
+              <button className={`${s.id === id ? 'cur' : ''} ${stepDone(s.id, game) ? 'done' : ''} ${isLocked(i) ? 'locked' : ''}`} aria-current={s.id === id ? 'step' : undefined}
+                disabled={isLocked(i)} title={isLocked(i) ? '먼저 "데이터 고르기"에서 데이터를 확인해요' : undefined} onClick={() => setId(s.id)}>
+                <span className="dot">{stepDone(s.id, game) ? '✓' : isLocked(i) ? '🔒' : i + 1}</span>
                 <span><b>{s.name}</b>{s.doc && <small>기획안 {s.doc}</small>}</span>
               </button>
             </li>
@@ -610,7 +658,9 @@ export default function Plan(props) {
         <Stuck items={STUCK[id]} />
         <div className="row pager">
           <button className="ghost" disabled={idx === 0} onClick={() => setId(PLAN_STEPS[idx - 1].id)}>← 이전</button>
-          {idx < PLAN_STEPS.length - 1 && <button className="primary" onClick={() => setId(PLAN_STEPS[idx + 1].id)}>다음 →</button>}
+          {idx < PLAN_STEPS.length - 1 && (
+            <button className="primary" disabled={isLocked(idx + 1)} title={isLocked(idx + 1) ? '데이터 확인을 마쳐야 넘어가요' : undefined} onClick={() => setId(PLAN_STEPS[idx + 1].id)}>다음 →</button>
+          )}
         </div>
       </section>
 
