@@ -61,7 +61,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 .howto .rule { background: var(--blue-soft); border-radius: 10px; padding: 8px 12px; margin: 0; font-size: .9rem; color: var(--ink); }
 
 /* ---------- 기획 마법사 ---------- */
-.plan { display: grid; grid-template-columns: 230px minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.plan { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 16px; align-items: start; }
 .steps { position: sticky; top: 8px; }
 .steps ol { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; }
 .steps li button { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: 8px 10px; background: none; border: 1.5px solid transparent; border-radius: 10px; }
@@ -75,7 +75,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 .stage { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
 .stage header small { color: var(--blue); font-weight: 700; }
 .stage h2 { margin: 0; }
-.side { position: sticky; top: 8px; min-width: 0; }
+
 .pager { border-top: 1px solid var(--line); padding-top: 12px; }
 
 .field { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-width: 0; }
@@ -176,8 +176,8 @@ th { background: var(--blue-soft); white-space: nowrap; }
 details summary { cursor: pointer; }
 
 /* ---------- 코치 ---------- */
-.chat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; min-width: 0; }
-.two .chat { position: sticky; top: 8px; }
+
+
 .chat-head { display: flex; justify-content: space-between; align-items: baseline; }
 .chat .empty { margin: 0; }
 .cando { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 6px; font-size: .8rem; }
@@ -307,3 +307,21 @@ details summary { cursor: pointer; }
 
 .tablewrap { max-width: 100%; }
 .detail details { min-width: 0; }
+
+/* ---------- 화면 아래 플로팅 코치 바 ---------- */
+.has-dock { padding-bottom: calc(var(--dock-h, 110px) + 28px); }
+.dock { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); width: min(920px, calc(100vw - 24px)); z-index: 20;
+  background: var(--card); border: 1.5px solid var(--blue); border-radius: 16px; padding: 10px 14px 8px; display: grid; gap: 6px;
+  box-shadow: 0 8px 30px rgba(20, 30, 70, .22); }
+.dock-head { display: flex; align-items: baseline; gap: 10px; }
+.dock-body { display: grid; gap: 6px; }
+.dock .cando { margin: 0; }
+.dock .cando .note { color: var(--muted); padding: 3px 0; }
+.dock .log { max-height: min(38vh, 320px); margin: 0; }
+.dock .chips { margin: 0; }
+.dock-input { display: flex; gap: 8px; align-items: flex-end; }
+.dock-input textarea { resize: none; min-height: 0; line-height: 1.5; flex: 1; padding: 8px 12px; }
+.dock-input .primary { height: 40px; }
+.dock-hint { text-align: right; }
+@media (max-width: 520px) { .dock { bottom: 0; width: 100vw; border-radius: 16px 16px 0 0; border-width: 1.5px 0 0; } .dock-hint { display: none; } .has-dock { padding-bottom: calc(var(--dock-h, 110px) + 16px); } }
+@media print { .dock { display: none; } }

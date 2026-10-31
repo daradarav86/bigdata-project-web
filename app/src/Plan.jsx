@@ -1,10 +1,9 @@
 ﻿import { useMemo, useState } from 'react'
 import datasets from './data/datasets.json'
 import { FRAMES, STATS, CHARTS, MISSING, KIND_LABEL, getDs, getCol } from './data/meta.js'
-import { PLAN_STEPS, stepDone, draftQuestion, contextOf, checkCodeDesign, buildPlanText, pct, statFor, chartFor, isFreq, hasMeasure, picksKey, frameOf, nameOf, missingOf, reviewState, MAX_REVIEWS, MAX_CONCERNS, concernText } from './doc.js'
+import { PLAN_STEPS, stepDone, draftQuestion, checkCodeDesign, buildPlanText, pct, statFor, chartFor, isFreq, hasMeasure, picksKey, frameOf, nameOf, missingOf, reviewState, MAX_REVIEWS, MAX_CONCERNS, concernText } from './doc.js'
 import { reviewQuestion } from './coach.js'
 import { Text, Seg, Think, Stuck } from './ui.jsx'
-import Chat from './Chat.jsx'
 import { exportPlanDocx } from './exportDoc.js'
 
 const dsName = d => `${d.field} · ${d.desc}`
@@ -485,7 +484,7 @@ const STUCK = {
 const RIGHT = { team: TeamStep, career: CareerStep, data: DataStep, scene: SceneStep, question: QuestionStep, understand: UnderstandStep, method: MethodStep, summary: SummaryStep }
 
 export default function Plan(props) {
-  const { game, aiLeft, consumeAi, setChat, go: goTab } = props
+  const { game, go: goTab } = props
   const [id, setId] = useState(PLAN_STEPS.find(s => !stepDone(s.id, game))?.id ?? 'summary')
   const idx = PLAN_STEPS.findIndex(s => s.id === id)
   const Step = RIGHT[id]
@@ -516,11 +515,7 @@ export default function Plan(props) {
           {idx < PLAN_STEPS.length - 1 && <button className="primary" onClick={() => setId(PLAN_STEPS[idx + 1].id)}>다음 →</button>}
         </div>
       </section>
-      <aside className="side">
-        <Chat mode="plan" game={game} context={contextOf(game)} aiLeft={aiLeft} consumeAi={consumeAi} setChat={setChat}
-          placeholder="예: 간호사가 꿈인데 이 데이터로 뭘 비교할 수 있을지 모르겠어요"
-          examples={['이 데이터로 어떤 비교가 가능한지 모르겠어요', '내 질문이 너무 넓은지 봐 주세요', '예상을 어떻게 세워야 할지 모르겠어요']} />
-      </aside>
+
     </div>
   )
 }

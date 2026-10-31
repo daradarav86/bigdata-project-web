@@ -1,7 +1,5 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { TOPICS, ERRORS, SYMPTOMS, TERMS } from './data/hints.js'
-import { contextOf } from './doc.js'
-import Chat from './Chat.jsx'
 import { TabIntro } from './Guide.jsx'
 
 function Ladder({ topic }) {
@@ -49,7 +47,7 @@ function ErrorDecoder() {
     <section className="panel">
       <h3>오류 해독기</h3>
       <textarea rows={3} value={msg} aria-label="오류 메시지" placeholder="빨간 오류 메시지의 마지막 줄을 붙여 넣어요 (예: KeyError: 'age')" onChange={e => setMsg(e.target.value)} />
-      {msg.trim() && !hit && <p className="muted small">아직 모르는 오류예요. 옆의 코드 코치에게 물어보세요.</p>}
+      {msg.trim() && !hit && <p className="muted small">아직 모르는 오류예요. 화면 아래 코치에게 물어보세요.</p>}
       {hit && (
         <div className="decode">
           <b>{hit.name}</b> — {hit.meaning}
@@ -73,13 +71,12 @@ function Glossary() {
   )
 }
 
-export default function Code({ game, aiLeft, consumeAi, setChat }) {
+export default function Code() {
   const [id, setId] = useState(TOPICS[0].id)
   const topic = TOPICS.find(t => t.id === id)
   return (
-    <div className="two">
-      <div className="stack">
-        <TabIntro>코드는 노트북(Colab)에서 실행해요. 막히는 곳이 있으면 ① 막힌 부분을 고르고 → ② 힌트를 1단계부터 읽고 → ③ 오류 메시지는 해독기에 붙여 넣고 → ④ 그래도 안 되면 오른쪽 코치에게 물어요.</TabIntro>
+    <div className="stack">
+        <TabIntro>코드는 노트북(Colab)에서 실행해요. 막히는 곳이 있으면 ① 막힌 부분을 고르고 → ② 힌트를 1단계부터 읽고 → ③ 오류 메시지는 해독기에 붙여 넣고 → ④ 그래도 안 되면 화면 아래 코치에게 물어요.</TabIntro>
         <section className="panel">
           <h3>어떤 부분에서 막혔나요?</h3>
           <div className="chips">
@@ -89,10 +86,6 @@ export default function Code({ game, aiLeft, consumeAi, setChat }) {
         </section>
         <ErrorDecoder />
         <Glossary />
-      </div>
-      <Chat mode="code" game={game} context={contextOf(game)} aiLeft={aiLeft} consumeAi={consumeAi} setChat={setChat}
-        placeholder="막힌 상황을 설명하고, 필요하면 내 코드와 오류 메시지를 붙여 넣으세요."
-        examples={['결과가 NaN으로 나와요', 'groupby를 어떻게 시작할지 모르겠어요', '그래프에 막대가 너무 많아요']} />
     </div>
   )
 }

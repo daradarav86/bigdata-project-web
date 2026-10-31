@@ -4,6 +4,7 @@ import Gate from './Gate.jsx'
 import Plan from './Plan.jsx'
 import Code from './Code.jsx'
 import Deck from './Deck.jsx'
+import CoachDock from './CoachDock.jsx'
 import { HowTo } from './Guide.jsx'
 import { SITE_NAME } from './data/meta.js'
 import { PLAN_STEPS, stepDone } from './doc.js'
@@ -24,8 +25,9 @@ export default function App() {
   if (!g.current) return <Gate createTeam={g.createTeam} joinTeam={g.joinTeam} teamNames={g.teamNames} />
 
   const done = PLAN_STEPS.filter(s => stepDone(s.id, game)).length
+  const dock = tab === 'plan' || tab === 'code' // 발표 탭에서는 코치 바를 숨긴다
   return (
-    <div className="app">
+    <div className={`app ${dock ? 'has-dock' : ''}`}>
       <header className="top">
         <strong className="logo">{SITE_NAME}</strong>
         <span className="chip">{game.team}</span>
@@ -51,6 +53,7 @@ export default function App() {
         {tab === 'code' && <Code {...g} game={game} />}
         {tab === 'deck' && <Deck {...g} game={game} go={setTab} />}
       </main>
+      {dock && <CoachDock mode={tab} game={game} aiLeft={g.aiLeft} consumeAi={g.consumeAi} setChat={g.setChat} />}
     </div>
   )
 }
