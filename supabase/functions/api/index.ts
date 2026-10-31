@@ -30,7 +30,7 @@ async function student(client: ReturnType<typeof db>, action: string, b: Record<
     const salt = newSalt(), hash = await hashPin(salt, pin)
     const row = { key, cls, no, salt, hash, game: { ...game, team: key, cls, no, ai: undefined } }
     const { data, error } = await client.from('teams').insert(row).select('key, cls, hash, coin_bonus, rev, created_at').single()
-    if (error?.code === '23505') return fail(409, 'exists', `${key}은 이미 있어요. "우리 팀으로 들어가기"를 눌러요.`)
+    if (error?.code === '23505') return fail(409, 'exists', `${key}는 이미 있어요. "우리 팀으로 들어가기"를 눌러요.`)
     if (error) throw error
     return json(await view(client, data, row.game, await makeToken(key, hash)))
   }
@@ -40,7 +40,7 @@ async function student(client: ReturnType<typeof db>, action: string, b: Record<
     if (!validTeam(cls, no) || typeof pin !== 'string') return fail(400, 'bad_team', '반과 조를 목록에서 골라 주세요.')
     const key = teamKey(cls as string, no as number)
     const { data: t } = await client.from('teams').select('*').eq('key', key).maybeSingle()
-    if (!t) return fail(404, 'no_team', `${key}은 아직 없어요. 처음이면 "새 팀 만들기"를 눌러요.`)
+    if (!t) return fail(404, 'no_team', `${key}는 아직 없어요. 처음이면 "새 팀 만들기"를 눌러요.`)
     if (t.locked_until && new Date(t.locked_until).getTime() > Date.now()) {
       const m = Math.ceil((new Date(t.locked_until).getTime() - Date.now()) / 60000)
       return fail(429, 'locked', `비밀번호를 여러 번 틀려서 잠겼어요. ${m}분 뒤에 다시 해 보거나 선생님께 말씀드려요.`)
@@ -78,6 +78,9 @@ async function student(client: ReturnType<typeof db>, action: string, b: Record<
   }
 
   if (action === 'remove') {
+    // 팀 전체가 사라지므로 비밀번호를 한 번 더 확인한다 (한 사람이 실수로 지우지 않게)
+    const { data: t } = await client.from('teams').select('salt, hash').eq('key', team.key).single()
+    if (typeof b.pin !== 'string' || !same(await hashPin(t!.salt, b.pin), t!.hash)) return fail(403, 'bad_pin', '비밀번호(숫자)가 맞지 않아 지우지 않았어요.')
     await client.from('teams').delete().eq('key', team.key)
     return json({ ok: true })
   }
@@ -90,15 +93,14 @@ async function admin(client: ReturnType<typeof db>, action: string, b: Record<st
   if (action === 'admin_check') return json({ ok: true })
 
   if (action === 'admin_list') {
-    const [{ data: teams, error }, { data: logs }, { data: settings }] = await Promise.all([
-      client.from('teams').select('key, game, coin_bonus, rev, created_at, updated_at').order('key'),
-      client.from('coach_log').select('team, created_at'),
+    const [{ data: teams, error }, { data: counts, error: e2 }, { data: settings }] = await Promise.all([
+      client.from('teams').select('key, game, coin_bonus, rev, updated_at').order('key'),
+      client.rpc('coach_counts'), // 팀별로 쓴 코인 (DB에서 센다. 기록을 통째로 읽으면 1000줄 제한에 걸린다)
       client.from('class_settings').select('cls, coach, phase'),
     ])
     if (error) throw error
-    const used: Record<string, number> = {}
-    const born = Object.fromEntries((teams ?? []).map(t => [t.key, t.created_at]))
-    for (const l of logs ?? []) if (born[l.team] && l.created_at >= born[l.team]) used[l.team] = (used[l.team] ?? 0) + 1 // 지금 팀을 만든 뒤의 기록만
+    if (e2) throw e2
+    const used: Record<string, number> = Object.fromEntries((counts ?? []).map((c: { team: string; used: number }) => [c.team, Number(c.used)]))
     return json({
       // 목록에는 발표 그래프 이미지를 빼고 보낸다 (팀이 많으면 무거워서)
       teams: (teams ?? []).map(t => ({

@@ -28,7 +28,7 @@ app/                     React + Vite 프런트엔드
   src/store.js           팀 기록 상태·저장·동기화
 scripts/                 profile-data.mjs (CSV → datasets.json), check-*.mjs (검사)
 supabase/
-  migrations/            0001 coach_log, 0002 teams·class_settings·merge_game
+  migrations/            0001 coach_log, 0002 teams·class_settings·merge_game, 0003 팀원 칸 단위 저장·coach_counts
   functions/api          팀 만들기·들어가기·저장·동기화, 관리자 기능
   functions/coach        AI 코치 (Claude)
   functions/_shared      두 함수가 함께 쓰는 것 (토큰, DB 연결, 코인)

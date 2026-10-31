@@ -12,8 +12,10 @@ export class ApiError extends Error {
 
 export async function post(fn, body, headers = {}) {
   let res
+  const text = JSON.stringify(body)
   try {
-    res = await fetch(`${BASE}/${fn}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) })
+    // keepalive: 페이지를 닫는 순간 보낸 저장도 끝까지 가게 한다 (브라우저 제한이 64KB라서 작은 요청만)
+    res = await fetch(`${BASE}/${fn}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: text, keepalive: text.length < 60000 })
   } catch {
     throw new ApiError('서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.', 0)
   }
@@ -22,12 +24,14 @@ export async function post(fn, body, headers = {}) {
   return data
 }
 
-// patch: { "keyword": 값, "deck.title": 값 } 처럼 경로 → 값. 서버의 merge_game과 같은 방식으로 고친다.
+// patch: { "keyword": 값, "deck.title": 값, "members.2": 값 } 처럼 경로 → 값. 서버의 merge_game과 같은 방식으로 고친다.
+// 안쪽 칸이 배열이면(팀원 목록) 그 번호의 칸만 바꾼다.
 export function applyPatch(game, patch) {
   const g = { ...game }
   for (const [k, v] of Object.entries(patch)) {
     const [a, b] = k.split('.')
     if (b === undefined) g[a] = v
+    else if (Array.isArray(g[a])) { const arr = [...g[a]]; arr[Number(b)] = v; g[a] = arr }
     else g[a] = { ...(g[a] && typeof g[a] === 'object' ? g[a] : {}), [b]: v }
   }
   return g
@@ -39,7 +43,7 @@ const remote = {
   join: (cls, no, pin) => post('api', { action: 'join', cls, no, pin }),
   sync: (token, rev) => post('api', { action: 'sync', token, rev }),
   save: (token, patch) => post('api', { action: 'save', token, patch }),
-  remove: token => post('api', { action: 'remove', token }),
+  remove: (token, pin) => post('api', { action: 'remove', token, pin }),
   admin: (pass, action, body = {}) => post('api', { action: `admin_${action}`, ...body }, { 'x-admin-password': pass }),
 }
 
@@ -68,14 +72,14 @@ const need = token => {
 const local = {
   async create({ cls, no, pin, game }) {
     const key = teamKey(cls, no), all = readTeams()
-    if (all[key]) throw new ApiError(`${key}은 이미 있어요. "우리 팀으로 들어가기"를 눌러요.`, 409)
+    if (all[key]) throw new ApiError(`${key}는 이미 있어요. "우리 팀으로 들어가기"를 눌러요.`, 409)
     all[key] = { ...(await cred(pin)), game: { ...game, team: key, cls, no }, rev: 1, used: 0, bonus: 0 }
     writeTeams(all)
     return localView(key, all[key], null, key)
   },
   async join(cls, no, pin) {
     const key = teamKey(cls, no), t = readTeams()[key]
-    if (!t) throw new ApiError(`이 기기에는 ${key}이 없어요. 처음이면 "새 팀 만들기"를 눌러요.`, 404)
+    if (!t) throw new ApiError(`이 기기에는 ${key}가 없어요. 처음이면 "새 팀 만들기"를 눌러요.`, 404)
     if ((await cred(pin, t.salt)).hash !== t.hash) throw new ApiError('비밀번호(숫자)가 맞지 않아요.', 401)
     return localView(key, t, null, key)
   },
@@ -87,8 +91,10 @@ const local = {
     writeTeams(all)
     return { rev: t.rev + 1 }
   },
-  async remove(token) {
-    const all = readTeams(); delete all[token]; writeTeams(all)
+  async remove(token, pin) {
+    const all = readTeams(), t = need(token)
+    if ((await cred(pin ?? '', t.salt)).hash !== t.hash) throw new ApiError('비밀번호(숫자)가 맞지 않아 지우지 않았어요.', 403)
+    delete all[token]; writeTeams(all)
     return { ok: true }
   },
   // 데모 코치가 코인을 쓴다 (서버에서는 coach 함수가 센다)

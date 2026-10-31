@@ -43,7 +43,11 @@ export default function App() {
         <span className={'save ' + g.saveState} role="status">{SAVE_LABEL[g.saveState]}</span>
         <button className="link small" aria-expanded={showHelp} onClick={() => setShowHelp(v => !v)}>사용법</button>
         <button className="link small" onClick={g.logout}>팀 나가기</button>
-        <button className="link small" onClick={() => { if (confirm(`"${game.team}" 팀의 기록을 모두 지울까요? 팀원 모두의 기록이 사라지고 되돌릴 수 없어요.`)) g.removeTeam().then(r => { if (!r.ok) alert(r.error) }) }}>팀 지우기</button>
+        <button className="link small" onClick={() => {
+          // 팀원 모두의 기록이 사라지므로 비밀번호를 다시 넣어야 지워진다
+          const pin = prompt(`"${game.team}" 팀의 기록을 모두 지울까요? 팀원 모두의 기록이 사라지고 되돌릴 수 없어요.\n지우려면 우리 팀 비밀번호(숫자)를 입력해요.`)
+          if (pin) g.removeTeam(pin.trim()).then(r => { if (!r.ok) alert(r.error) })
+        }}>팀 지우기</button>
       </header>
       {showHelp && (
         <section className="panel helpbox">

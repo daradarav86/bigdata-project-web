@@ -1,6 +1,6 @@
 ﻿import { useCallback, useEffect, useRef, useState } from 'react'
 import { CLASSES, GROUPS, DEFAULT_SETTINGS } from './classSettings.js'
-import { backend, SERVER, TEAM_AI } from './backend.js'
+import { backend, SERVER, TEAM_AI, applyPatch } from './backend.js'
 
 export { TEAM_AI } // 코치는 팀당 총 10번 (하루 단위가 아니다)
 export const MAX_MEMBERS = 6
@@ -50,6 +50,7 @@ const LAST_KEY = 'data-detective-last'
 const SAVE_MS = 700 // 고친 뒤 이만큼 쉬면 저장한다
 const SYNC_MS = 8000 // 이 간격으로 같은 팀의 다른 기기에서 고친 것과 선생님 설정을 받아 온다
 const NESTED = ['deck', 'chats', 'dataQA'] // 이 항목은 안쪽 칸 단위로 저장한다 (팀원이 서로 다른 칸을 동시에 고쳐도 덮어쓰지 않게)
+const NESTED_LIST = ['members'] // 팀원 목록은 사람(번호) 단위로 저장한다 (각자 기기에서 자기 진로를 동시에 써도 덮어쓰지 않게)
 
 const readToken = () => { try { return sessionStorage.getItem(TOKEN_KEY) ?? '' } catch { return '' } }
 const writeToken = t => { try { if (t) sessionStorage.setItem(TOKEN_KEY, t); else sessionStorage.removeItem(TOKEN_KEY) } catch { /* 저장 불가 환경 */ } }
@@ -64,18 +65,11 @@ function diff(a, b) {
     if (k === 'ai' || a[k] === b[k]) continue
     if (NESTED.includes(k) && isObj(a[k]) && isObj(b[k])) {
       for (const j of new Set([...Object.keys(a[k]), ...Object.keys(b[k])])) if (a[k][j] !== b[k][j]) out[`${k}.${j}`] = b[k][j] ?? null
+    } else if (NESTED_LIST.includes(k) && Array.isArray(a[k]) && Array.isArray(b[k]) && a[k].length === b[k].length) {
+      b[k].forEach((x, i) => { if (x !== a[k][i]) out[`${k}.${i}`] = x }) // 인원수가 바뀌면 아래에서 목록 전체를 보낸다
     } else out[k] = b[k]
   }
   return out
-}
-// 서버에서 받은 기록 위에 아직 보내지 않은 내 변경을 다시 얹는다
-function merge(game, patch) {
-  const g = { ...game }
-  for (const [k, v] of Object.entries(patch)) {
-    const [a, b] = k.split('.')
-    g[a] = b === undefined ? v : { ...(isObj(g[a]) ? g[a] : {}), [b]: v }
-  }
-  return g
 }
 
 const OUT = { token: '', game: null, ai: { used: 0, bonus: 0 }, settings: DEFAULT_SETTINGS }
@@ -154,7 +148,8 @@ export function useGame() {
       if (ref.current.token !== token || sending.current || saved.current !== before) return
       rev.current = r.rev
       setS(cur => {
-        const next = { ...cur, ai: r.ai, settings: r.settings, game: r.game ? withDefaults(merge(r.game, pending.current)) : cur.game }
+        // 아직 보내지 않은 내 변경은 받은 기록 위에 다시 얹는다
+        const next = { ...cur, ai: r.ai, settings: r.settings, game: r.game ? withDefaults(applyPatch(r.game, pending.current)) : cur.game }
         ref.current = next
         return next
       })
@@ -236,9 +231,14 @@ export function useGame() {
   }
   // 들어가기: 반·조와 PIN이 맞으면 그 팀으로 연다
   const joinTeam = (cls, no, pass) => run(async () => { const r = await backend.join(cls, no, pass); enter(r, r.token) })
-  const logout = async () => { await flush(); leave() }
-  // 이 팀의 기록을 지운다 (팀 자체도 삭제)
-  const removeTeam = () => run(async () => { await backend.remove(ref.current.token); leave('팀을 지웠어요.') })
+  // 나가기 전에 보내는 중인 저장을 기다렸다가 남은 변경까지 보낸다
+  const logout = async () => {
+    for (let i = 0; i < 50 && sending.current; i++) await new Promise(res => setTimeout(res, 100))
+    await flush()
+    leave()
+  }
+  // 이 팀의 기록을 지운다 (팀 자체도 삭제). 팀 전체가 사라지므로 비밀번호를 한 번 더 받는다.
+  const removeTeam = pin => run(async () => { await backend.remove(ref.current.token, pin); leave('팀을 지웠어요.') })
 
   return {
     game, patch, setDeck, setSize, setMember, aiLeft, aiTotal, consumeAi, setChat,
