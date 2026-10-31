@@ -375,3 +375,6 @@ details summary { cursor: pointer; }
 .check { min-height: 36px; }
 .fsent { overflow-wrap: anywhere; }
 
+
+.tabs button.locked { opacity: .6; cursor: not-allowed; }
+

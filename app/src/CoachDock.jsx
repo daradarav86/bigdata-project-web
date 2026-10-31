@@ -56,7 +56,7 @@ function Coins({ left, spent, total }) {
 }
 
 // 오른쪽 아래의 작은 채팅 상담 버튼. 누르면 작은 채팅 창이 열린다.
-export default function CoachDock({ mode, game, aiLeft, consumeAi, setChat }) {
+export default function CoachDock({ mode, game, coachOn = true, aiLeft, consumeAi, setChat }) {
   const msgs = game.chats[mode]
   const [open, setOpen] = useState(readOpen)
   const [text, setText] = useState('')
@@ -68,6 +68,7 @@ export default function CoachDock({ mode, game, aiLeft, consumeAi, setChat }) {
   const input = useRef(null)
   const prevLeft = useRef(aiLeft)
   const noTeam = !game.team.trim()
+  const off = !coachOn || aiLeft <= 0 // 선생님이 이 반의 코치를 막았거나 코인이 없으면 보낼 수 없다
   const low = aiLeft <= 3
 
   const toggle = v => {
@@ -103,7 +104,7 @@ export default function CoachDock({ mode, game, aiLeft, consumeAi, setChat }) {
 
   const send = async () => {
     const message = text.trim()
-    if (!message || busy || aiLeft <= 0 || noTeam) return
+    if (!message || busy || off || noTeam) return
     const next = [...msgs, { role: 'user', text: message }]
     setChat(mode, next)
     setText('')
@@ -132,7 +133,7 @@ export default function CoachDock({ mode, game, aiLeft, consumeAi, setChat }) {
   const asked = new Set(msgs.filter(m => m.role === 'user').map(m => m.text))
   const suggestions = EXAMPLES[mode].filter(e => !asked.has(e)).slice(0, 3)
   const lastIsCoach = msgs.length === 0 || msgs[msgs.length - 1].role === 'coach'
-  const showChips = aiLeft > 0 && !busy && lastIsCoach && suggestions.length > 0
+  const showChips = !off && !busy && lastIsCoach && suggestions.length > 0
 
   return (
     <div className="cw">
@@ -150,7 +151,9 @@ export default function CoachDock({ mode, game, aiLeft, consumeAi, setChat }) {
               <Coins left={aiLeft} spent={spent} total={aiTotalOf(game)} />
             </div>
             <p>
-              {aiLeft <= 0
+              {!coachOn
+                ? '선생님이 지금은 코치를 닫아 두었어요. 우리 팀이 먼저 힌트와 예시를 보며 해 봐요. 코인은 그대로 남아 있어요.'
+                : aiLeft <= 0
                 ? '우리 팀 코인을 모두 썼어요. 더 필요하면 선생님께 말씀드려요.'
                 : '코치는 팀당 ' + TEAM_AI + '번만 물어볼 수 있어요. 한 번 보낼 때마다 코인 1개가 줄고, 다시 채워지지 않아요.' + (low ? ' 꼭 필요할 때 쓰세요!' : '')}
             </p>
@@ -184,9 +187,9 @@ export default function CoachDock({ mode, game, aiLeft, consumeAi, setChat }) {
 
           <div className="cw-input">
             <textarea ref={input} rows={1} maxLength={MAX_CHARS} value={text} aria-label={title + '에게 보낼 글'}
-              placeholder={aiLeft <= 0 ? '우리 팀 코인을 모두 썼어요' : PLACEHOLDER[mode]} disabled={aiLeft <= 0}
+              placeholder={!coachOn ? '지금은 코치가 닫혀 있어요' : aiLeft <= 0 ? '우리 팀 코인을 모두 썼어요' : PLACEHOLDER[mode]} disabled={off}
               onChange={e => setText(e.target.value)} onKeyDown={onKey} />
-            <button type="button" className="primary" onClick={send} disabled={busy || !text.trim() || aiLeft <= 0 || noTeam}>보내기</button>
+            <button type="button" className="primary" onClick={send} disabled={busy || !text.trim() || off || noTeam}>보내기</button>
           </div>
           <small className="muted cw-foot">보내면 코인 1개가 줄어요 · Enter 보내기 · Shift+Enter 줄바꿈</small>
         </section>

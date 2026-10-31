@@ -85,7 +85,7 @@ function TeamStep({ game, patch, setMember }) {
       </dl>
       <div className="field">
         <span className="lbl">팀원 (학번, 이름)</span>
-        <p className="hint">팀 이름과 팀원은 처음 화면에서 정했어요. 학번이나 이름이 틀렸다면 여기서 고쳐요.</p>
+        <p className="hint">반·조와 팀원은 처음 화면에서 정했어요. 학번이나 이름이 틀렸다면 여기서 고쳐요.</p>
         <div className="members">
           {game.members.map((m, i) => (
             <div key={i} className="mrow">

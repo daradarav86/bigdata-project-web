@@ -9,6 +9,7 @@ import ErrorBoundary from './ErrorBoundary.jsx'
 import { HowTo } from './Guide.jsx'
 import { SITE_NAME } from './data/meta.js'
 import { PLAN_STEPS, stepDone } from './doc.js'
+import { useClassSettings, phaseOf } from './classSettings.js'
 import './App.css'
 
 const TABS = [
@@ -20,11 +21,14 @@ const TABS = [
 export default function App() {
   const g = useGame()
   const { game } = g
-  const [tab, setTab] = useState('plan')
+  const [want, setTab] = useState('plan')
   const [showHelp, setShowHelp] = useState(false)
+  const cs = useClassSettings(game.cls) // 선생님이 반마다 정한 코치 사용 여부와 수업 단계
+  const phase = phaseOf(cs.phase)
 
   if (!g.current) return <Gate createTeam={g.createTeam} joinTeam={g.joinTeam} teamNames={g.teamNames} />
 
+  const tab = phase.open.includes(want) ? want : phase.tab // 아직 잠긴 탭이면 지금 단계의 탭을 보여 준다
   const done = PLAN_STEPS.filter(s => stepDone(s.id, game)).length
   const dock = tab === 'plan' || tab === 'code' // 발표 탭에서는 코치 바를 숨긴다
   return (
@@ -43,11 +47,15 @@ export default function App() {
         </section>
       )}
       <nav className="tabs" aria-label="메뉴">
-        {TABS.map(([id, label, sub]) => (
-          <button key={id} className={tab === id ? 'on' : ''} aria-current={tab === id ? 'page' : undefined} onClick={() => setTab(id)}>
-            {label}<small>{id === 'plan' ? `${done}/${PLAN_STEPS.length} 단계 완료` : sub}</small>
-          </button>
-        ))}
+        {TABS.map(([id, label, sub]) => {
+          const locked = !phase.open.includes(id)
+          return (
+            <button key={id} className={(tab === id ? 'on' : '') + (locked ? ' locked' : '')} aria-current={tab === id ? 'page' : undefined} disabled={locked} onClick={() => setTab(id)}>
+              {locked ? '🔒 ' : ''}{label}
+              <small>{locked ? '선생님이 아직 열지 않았어요' : id === phase.tab && cs.phase !== 'deck' ? '지금 할 일' : id === 'plan' ? `${done}/${PLAN_STEPS.length} 단계 완료` : sub}</small>
+            </button>
+          )
+        })}
       </nav>
       <main>
         <ErrorBoundary key={tab}>
@@ -56,7 +64,7 @@ export default function App() {
           {tab === 'deck' && <Deck {...g} game={game} go={setTab} />}
         </ErrorBoundary>
       </main>
-      {dock && <CoachDock mode={tab} game={game} aiLeft={g.aiLeft} consumeAi={g.consumeAi} setChat={g.setChat} />}
+      {dock && <CoachDock mode={tab} game={game} coachOn={cs.coach} aiLeft={g.aiLeft} consumeAi={g.consumeAi} setChat={g.setChat} />}
     </div>
   )
 }

@@ -1,14 +1,19 @@
 ﻿import { useEffect, useRef, useState } from 'react'
+import { CLASSES, GROUPS, teamKey } from './classSettings.js'
 
 const KEY = 'data-detective-v5'
 export const TEAM_AI = 10 // 코치는 팀당 총 10번 (하루 단위가 아니다)
 export const MAX_MEMBERS = 6
+// 비밀번호는 핀번호처럼 숫자 4~6자리
+export const isPin = s => /^\d{4,6}$/.test(s)
+export const PIN_RULE = '비밀번호는 숫자 4~6자리로 정해 주세요. (예: 4821)'
 
 const member = () => ({ id: '', name: '', career: '', job: '' })
 
 // 기획안 v2의 항목 순서를 그대로 따른다 (0 팀 → 1 진로·질문 → 2 데이터 → 3 분석 계획 → 4 결과 → 5 발표)
 export const START = {
-  team: '', size: 4, members: Array.from({ length: 4 }, member), pledge: false,
+  team: '', cls: '', no: 0, size: 4, // team: "1-3 5조"처럼 반·조에서 만든 이름
+ members: Array.from({ length: 4 }, member), pledge: false,
   keyword: '', keywordWhy: '',
   dataset: '',
   dataQA: {}, // 데이터 확인 기록: 데이터 id → { viewed: 열 목록을 열어 봤는지, ans: { 질문 id → 고른 보기 } }
@@ -98,25 +103,25 @@ export function useGame() {
   }))
   const setChat = (mode, msgs) => patch(g => ({ chats: { ...g.chats, [mode]: msgs.slice(-20) } }))
 
-  // 팀 만들기: { name, pass, size, members } → { ok, error }
-  const createTeam = async ({ name, pass, size, members }) => {
-    const n = name.trim()
-    if (n.length < 2) return { ok: false, error: '팀 이름은 2글자 이상으로 써 주세요.' }
-    if (pass.length < 4) return { ok: false, error: '비밀번호는 4글자 이상으로 써 주세요.' }
+  // 팀 만들기: 반·조는 목록에서 고른 값이고(직접 쓰지 않는다), 비밀번호는 숫자 4~6자리(PIN)다.
+  const createTeam = async ({ cls, no, pass, size, members }) => {
+    if (!CLASSES.includes(cls) || !GROUPS.includes(no)) return { ok: false, error: '반과 조를 목록에서 골라 주세요.' }
+    if (!isPin(pass)) return { ok: false, error: PIN_RULE }
     if (members.some(m => !m.name.trim())) return { ok: false, error: '팀원 이름을 모두 써 주세요.' }
-    if (ref.current.teams[n]) return { ok: false, error: '이 기기에 같은 이름의 팀이 이미 있어요. 다른 이름을 쓰거나 "들어가기"를 눌러요.' }
-    const salt = newSalt()
-    const hash = await hashPass(salt, pass)
-    const game0 = { ...START, team: n, size, members: members.map(m => ({ ...member(), id: m.id.trim(), name: m.name.trim() })) }
-    setState(s => ({ current: n, teams: { ...s.teams, [n]: { salt, hash, game: game0 } } }))
+    const n = teamKey(cls, no)
+    if (ref.current.teams[n]) return { ok: false, error: `${n}은 이 기기에 이미 있어요. "우리 팀으로 들어가기"를 눌러요.` }
+    const c = await makeCred(pass)
+    const game0 = { ...START, team: n, cls, no, size, members: members.map(m => ({ ...member(), id: m.id.trim(), name: m.name.trim() })) }
+    setState(s => ({ current: n, teams: { ...s.teams, [n]: { ...c, game: game0 } } }))
     return { ok: true }
   }
-  // 들어가기: 이름과 비밀번호가 맞으면 그 팀으로 연다
-  const joinTeam = async (name, pass) => {
-    const t = ref.current.teams[name.trim()]
-    if (!t) return { ok: false, error: '이 기기에는 그 이름의 팀이 없어요. 다른 기기에서 만든 팀은 서버를 연결한 뒤에 들어올 수 있어요.' }
-    if ((await hashPass(t.salt, pass)) !== t.hash) return { ok: false, error: '비밀번호가 맞지 않아요.' }
-    setState(s => ({ ...s, current: name.trim() }))
+  // 들어가기: 반·조와 PIN이 맞으면 그 팀으로 연다
+  const joinTeam = async (cls, no, pass) => {
+    const n = teamKey(cls, no)
+    const t = ref.current.teams[n]
+    if (!t) return { ok: false, error: `이 기기에는 ${n}이 없어요. 처음이면 "새 팀 만들기"를 눌러요. (다른 기기에서 만든 팀은 서버를 연결한 뒤에 들어올 수 있어요.)` }
+    if ((await hashPass(t.salt, pass)) !== t.hash) return { ok: false, error: '비밀번호(숫자)가 맞지 않아요.' }
+    setState(s => ({ ...s, current: n }))
     return { ok: true }
   }
   const logout = () => setState(s => ({ ...s, current: '' }))
