@@ -33,6 +33,9 @@ h4 { margin: 16px 0 4px; }
 .top { display: flex; align-items: center; gap: 10px; padding: 14px 0 6px; flex-wrap: wrap; }
 .logo { color: var(--blue); font-size: 1.1rem; margin-right: auto; }
 .chip { background: var(--card); border: 1px solid var(--line); border-radius: 99px; padding: 3px 12px; font-weight: 600; font-size: .9rem; }
+.save { font-size: .8rem; color: var(--muted); }
+.save.saved { color: var(--ok); }
+.save.error { color: var(--warn); font-weight: 600; }
 .link { background: none; border: 0; padding: 0; color: var(--blue); text-decoration: underline; text-align: left; }
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; overflow-x: auto; }
 .tabs button { background: none; border: 0; padding: 10px 22px; color: var(--muted); font-weight: 700; border-bottom: 3px solid transparent; white-space: nowrap; text-align: center; line-height: 1.3; }

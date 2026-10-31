@@ -1,23 +1,22 @@
-import { useEffect, useState } from 'react'
-import { readTeams, writeTeams, withDefaults, makeCred, aiTotalOf, isPin, PIN_RULE } from './store.js'
+import { useCallback, useEffect, useState } from 'react'
+import { withDefaults, aiTotalOf, isPin, PIN_RULE } from './store.js'
 import { PLAN_STEPS, stepDone, buildPlanText, reviewState, measureName } from './doc.js'
 import { getDs } from './data/meta.js'
-import { CLASSES, PHASES, readSettings, settingsOf, saveSettings } from './classSettings.js'
+import { CLASSES, PHASES, settingsOf } from './classSettings.js'
+import { backend, SERVER } from './backend.js'
 import './App.css' // 색 변수(:root)를 학생 화면과 같이 쓴다
 import './admin.css'
 
 // 선생님용 관리자 화면 (/admindara). 학생 화면과 따로 열리는 별도 페이지다.
-// 지금은 이 브라우저(localStorage)에 저장된 팀만 보인다. 서버(Supabase)를 연결하면 같은 화면에서 모든 반의 팀이 보이도록
-// 아래 "팀 자료 읽기·쓰기" 부분만 서버 호출로 바꾸면 된다.
+// 서버가 연결되어 있으면 관리자 비밀번호(서버의 ADMIN_PASSWORD)를 넣어야 열리고, 모든 반의 팀이 보인다.
+// 서버가 없으면(시험 모드) 이 브라우저에 저장된 팀만 보인다.
 
-// ---- 팀 자료 읽기·쓰기 (지금은 localStorage) ----
-const loadAll = () => Object.entries(readTeams()).map(([name, t]) => ({ name, salt: t.salt, hash: t.hash, game: withDefaults(t.game) }))
-const saveTeam = (name, fn) => {
-  const teams = readTeams()
-  if (!teams[name]) return
-  teams[name] = fn(teams[name])
-  writeTeams(teams)
-}
+// ---- 관리자 비밀번호: 이 탭에서만 기억한다 ----
+const PASS_KEY = 'data-detective-admin'
+const readPass = () => { try { return sessionStorage.getItem(PASS_KEY) ?? '' } catch { return '' } }
+const writePass = p => { try { if (p) sessionStorage.setItem(PASS_KEY, p); else sessionStorage.removeItem(PASS_KEY) } catch { /* 저장 불가 환경 */ } }
+let PASS = readPass()
+const call = (action, body) => backend.admin(PASS, action, body)
 
 const ago = ms => {
   if (!ms) return '기록 없음'
@@ -29,7 +28,8 @@ const ago = ms => {
 }
 
 // 한 팀을 표 한 줄로 요약
-function summarize({ name, game: g }) {
+function summarize({ key: name, game, ai }) {
+  const g = withDefaults({ ...game, ai })
   const done = PLAN_STEPS.map(s => stepDone(s.id, g))
   const cur = PLAN_STEPS.find((_, i) => !done[i])
   const total = aiTotalOf(g)
@@ -49,31 +49,21 @@ function Stat({ label, value, sub }) {
   return <div className="ad-stat"><small>{label}</small><b>{value}</b>{sub && <span>{sub}</span>}</div>
 }
 
-// 반 전체에 코인을 더 준다
-function giveClassCoins(cls, n) {
-  const teams = readTeams()
-  let count = 0
-  Object.keys(teams).forEach(k => {
-    const g = withDefaults(teams[k].game)
-    if (g.cls !== cls) return
-    teams[k] = { ...teams[k], game: { ...g, ai: { ...g.ai, bonus: (g.ai.bonus || 0) + n } } }
-    count++
-  })
-  writeTeams(teams)
-  return count
-}
-
 // 수업 중에 쓰는 반별 설정: 코치(API)를 막을지 풀지, 지금 어느 단계(기획안 / 코드 / 발표)인지, 반 전체 코인
-function ClassPanel({ rows, onChange, filter, setFilter }) {
-  const all = readSettings()
+// 학생 화면은 약 8초마다 설정을 받아 오므로 바꾸면 곧 반영된다.
+function ClassPanel({ rows, settings: all, onChange, filter, setFilter }) {
   const [coins, setCoins] = useState(3)
   const [msg, setMsg] = useState('')
-  const set = (cls, p) => { saveSettings(cls, p); onChange() }
-  const setAllClasses = p => { CLASSES.forEach(c => saveSettings(c, p)); onChange() }
+  const act = async (fn, done) => {
+    try { setMsg(done(await fn())) } catch (e) { setMsg(e.message) }
+    onChange()
+  }
+  const set = (cls, p) => act(() => call('settings', { classes: [cls], patch: p }), () => '')
+  const setAllClasses = p => act(() => call('settings', { classes: CLASSES, patch: p }), () => '모든 반에 적용했어요.')
   const give = cls => {
     const n = Math.max(1, Math.min(50, Number(coins) || 0))
-    const c = giveClassCoins(cls, n)
-    setMsg(c ? `${cls}반 ${c}팀에 코인 ${n}개씩 줬어요.` : `${cls}반에는 팀이 아직 없어요.`); onChange()
+    const keys = rows.filter(r => r.cls === cls).map(r => r.name)
+    act(() => call('coins', { keys, n }), r => (r.count ? `${cls}반 ${r.count}팀에 코인 ${n}개씩 줬어요.` : `${cls}반에는 팀이 아직 없어요.`))
   }
   return (
     <section className="ad-classes" aria-label="반별 수업 설정">
@@ -124,20 +114,28 @@ function Detail({ row, onChange, onClose }) {
   try { planText = buildPlanText(g) } catch { planText = '(기획안을 만들 수 없는 상태예요)' }
   const rs = reviewState(g)
 
+  const [log, setLog] = useState(null) // 서버에 남은 코치 대화 전체 (대화 탭을 열 때 불러온다)
+  useEffect(() => {
+    if (tab !== 'chat' || !SERVER || log) return
+    call('log', { key: row.name }).then(r => setLog(r.log)).catch(e => setMsg(e.message))
+  }, [tab, log, row.name])
+
+  const act = async (fn, ok) => {
+    try { await fn(); setMsg(ok) } catch (e) { setMsg(e.message) }
+    onChange()
+  }
   const addCoins = () => {
     const n = Math.max(1, Math.min(50, Number(bonus) || 0))
-    saveTeam(row.name, t => ({ ...t, game: { ...t.game, ai: { ...withDefaults(t.game).ai, bonus: (withDefaults(t.game).ai.bonus || 0) + n } } }))
-    setMsg(`코인 ${n}개를 더 줬어요.`); onChange()
+    act(() => call('coins', { keys: [row.name], n }), `코인 ${n}개를 더 줬어요.`)
   }
-  const resetPw = async () => {
+  const resetPw = () => {
     if (!isPin(pw)) { setMsg(PIN_RULE); return }
-    const cred = await makeCred(pw)
-    saveTeam(row.name, t => ({ ...t, ...cred }))
-    setPw(''); setMsg('비밀번호를 바꿨어요. 학생에게 새 비밀번호를 알려 주세요.'); onChange()
+    act(async () => { await call('pin', { key: row.name, pin: pw }); setPw('') }, '비밀번호를 바꿨어요. 학생에게 새 비밀번호를 알려 주세요. (들어가 있던 기기는 다시 들어가야 해요)')
   }
-  const remove = () => {
+  const remove = async () => {
     if (!confirm(`"${row.name}" 팀의 기록을 모두 지울까요? 되돌릴 수 없어요.`)) return
-    const teams = readTeams(); delete teams[row.name]; writeTeams(teams); onClose(); onChange()
+    try { await call('delete', { key: row.name }); onClose() } catch (e) { setMsg(e.message) }
+    onChange()
   }
   const copy = async () => { try { await navigator.clipboard.writeText(planText); setMsg('기획안을 복사했어요.') } catch { setMsg('복사할 수 없는 환경이에요.') } }
 
@@ -176,7 +174,24 @@ function Detail({ row, onChange, onClose }) {
         </div>
       )}
 
-      {tab === 'chat' && (
+      {tab === 'chat' && log && (
+        <div className="ad-chats">
+          {['plan', 'code'].map(mode => (
+            <div key={mode}>
+              <h3>{mode === 'plan' ? '기획 코치' : '코드 코치'}</h3>
+              {!log.some(l => l.mode === mode) && <p className="ad-empty">대화가 없어요.</p>}
+              {log.filter(l => l.mode === mode).map((l, i) => (
+                <div key={i}>
+                  <p className="ad-msg user"><b>학생</b> {l.message}</p>
+                  <p className="ad-msg coach"><b>코치{l.flagged ? ' (규칙 검사로 다시 씀)' : ''}</b> {l.reply}</p>
+                </div>
+              ))}
+            </div>
+          ))}
+          <p className="ad-note">서버에 남은 코치 대화 전체예요.</p>
+        </div>
+      )}
+      {tab === 'chat' && !log && (
         <div className="ad-chats">
           {['plan', 'code'].map(mode => (
             <div key={mode}>
@@ -219,25 +234,58 @@ function Detail({ row, onChange, onClose }) {
   )
 }
 
+// 관리자 비밀번호 입력 (서버가 연결되어 있을 때만)
+function Login({ onOk }) {
+  const [pw, setPw] = useState('')
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const submit = async e => {
+    e.preventDefault()
+    setBusy(true); setErr('')
+    try { await backend.admin(pw, 'check'); PASS = pw; writePass(pw); onOk() } catch (e2) { setErr(e2.message) } finally { setBusy(false) }
+  }
+  return (
+    <div className="ad">
+      <form className="ad-box ad-login" onSubmit={submit}>
+        <h1>관리자 <small>원묵고 빅데이터원리탐구 도우미</small></h1>
+        <label>관리자 비밀번호 <input type="password" value={pw} autoComplete="current-password" autoFocus onChange={e => setPw(e.target.value)} /></label>
+        {err && <p className="warn" role="alert">{err}</p>}
+        <button type="submit" className="ad-btn primary" disabled={busy || !pw}>들어가기</button>
+      </form>
+    </div>
+  )
+}
+
 export default function Admin() {
-  const [, setTick] = useState(0)
+  const [authed, setAuthed] = useState(!SERVER || !!PASS)
+  const [data, setData] = useState(null) // { teams, settings } — 서버(또는 이 브라우저)에서 받은 것
+  const [err, setErr] = useState('')
   const [pick, setPick] = useState('')
   const [q, setQ] = useState('')
   const [sort, setSort] = useState('name')
   const [clsFilter, setClsFilter] = useState('')
-  const refresh = () => setTick(t => t + 1)
-
-  // 학생 화면에서 기록이 바뀌면(같은 브라우저) 따라서 새로 읽는다
-  useEffect(() => {
-    const on = () => refresh()
-    window.addEventListener('storage', on)
-    const id = setInterval(refresh, 15000)
-    return () => { window.removeEventListener('storage', on); clearInterval(id) }
+  const refresh = useCallback(() => {
+    call('list')
+      .then(r => { setData(r); setErr('') })
+      .catch(e => {
+        if (e.status === 401) { PASS = ''; writePass(''); setAuthed(false) }
+        setErr(e.message)
+      })
   }, [])
+
+  // 학생 기록이 계속 바뀌므로 주기적으로 새로 읽는다
+  useEffect(() => {
+    if (!authed) return undefined
+    refresh()
+    const id = setInterval(refresh, 15000)
+    return () => clearInterval(id)
+  }, [authed, refresh])
   useEffect(() => { document.title = '관리자 · 원묵고 빅데이터원리탐구 도우미' }, [])
 
-  // 렌더링할 때마다 새로 읽는다 (refresh로 tick이 바뀌면 다시 그려진다). 팀이 수십 개여도 가볍다.
-  const rows = loadAll().map(summarize)
+  if (!authed) return <Login onOk={() => setAuthed(true)} />
+  if (!data) return <div className="ad"><p className="ad-empty big">{err || '불러오는 중…'}</p></div>
+
+  const rows = data.teams.map(summarize)
   const shown = rows
     .filter(r => !clsFilter || r.cls === clsFilter)
     .filter(r => !q.trim() || (r.name + r.members).includes(q.trim()))
@@ -263,9 +311,12 @@ export default function Admin() {
         <a href="/" className="ad-btn">학생 화면으로</a>
       </header>
 
-      <p className="ad-banner" role="note">
-        <b>데모 모드</b> — 지금은 이 브라우저에 저장된 팀만 보여요. 서버(Supabase)를 연결하면 모든 반의 팀이 여기에 모이고, 로그인한 선생님만 이 화면을 볼 수 있어요.
-      </p>
+      {!SERVER && (
+        <p className="ad-banner" role="note">
+          <b>시험 모드</b> — 서버가 연결되지 않아 이 브라우저에 저장된 팀만 보여요.
+        </p>
+      )}
+      {err && <p className="ad-banner" role="alert">{err}</p>}
 
       <div className="ad-stats">
         <Stat label="팀 수" value={rows.length} />
@@ -274,7 +325,7 @@ export default function Admin() {
         <Stat label="코인 다 쓴 팀" value={`${dry}팀`} />
       </div>
 
-      <ClassPanel rows={rows} onChange={refresh} filter={clsFilter} setFilter={setClsFilter} />
+      <ClassPanel rows={rows} settings={data.settings} onChange={refresh} filter={clsFilter} setFilter={setClsFilter} />
 
       <div className="ad-tools">
         <input type="search" aria-label="팀 이름이나 팀원 검색" placeholder="팀 이름·팀원 검색" value={q} onChange={e => setQ(e.target.value)} />

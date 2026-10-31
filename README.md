@@ -2,48 +2,80 @@
 
 빅데이터 원리 탐구 수업의 **진로 데이터 프로젝트**(조별 기획 → 코드 → 3분 발표)를 학생이 직접 기획하고, 막힐 때 힌트를 받는 웹사이트입니다. 데이터는 [daradarav86/bigdata](https://github.com/daradarav86/bigdata)의 CSV 14개를 씁니다.
 
-> **상태: 프로토타입.** 화면과 흐름은 동작하지만, 서버(Supabase)와 AI 코치는 아직 연결·배포되지 않았습니다. 수업에서 쓰기 전에 아래 "남은 일"을 먼저 끝내야 합니다.
+> **상태:** 서버(Supabase)는 연결되어 있습니다. 팀 기록·반 설정이 서버에 저장되어 다른 기기에서도 같은 팀으로 들어올 수 있습니다.
+> 아직 남은 일은 아래 "남은 일"을 보세요 (Vercel 배포, 관리자 비밀번호·AI 키 넣기).
 
 ## 구성
 
-| 탭 | 내용 |
+| 화면 | 내용 |
 |---|---|
 | 기획 | 기획안 v2의 0~3번을 8단계 마법사로. 열(묶는 기준·계산할 열)을 카드로 고르고 질문을 만든다 |
 | 코드 | 단계별 힌트 사다리, 오류 해독기, 용어 풀이, 코드 코치 |
 | 발표 | 3분 발표 슬라이드 7장을 기획 내용으로 자동 채움 (인쇄/PDF) |
+| `/admindara` | 선생님 화면. 관리자 비밀번호로 들어가며, 반별 수업 단계(탭 잠금)·코치 켜고 끄기·코인 주기·비밀번호 초기화·팀 진행 현황·코치 대화 전체 |
 
+- 학생은 반·조를 고르고 숫자 4~6자리 비밀번호로 팀을 만들거나 들어갑니다. 비밀번호를 5번 틀리면 5분 동안 잠깁니다.
+- 고친 칸만 0.7초 뒤 서버에 저장하고, 8초마다 같은 팀의 다른 기기에서 고친 것과 선생님 설정을 받아 옵니다. 팀원이 서로 다른 칸을 동시에 고쳐도 덮어쓰지 않습니다.
 - 코치(AI)는 **되묻기·단서·도구 이름·빈칸 뼈대**까지만 답하고 완성 코드나 기획안 문장은 대신 써 주지 않습니다. 이 규칙은 서버가 출력을 검사해서 지킵니다.
+- 코치 코인은 팀당 10개(+선생님이 더 준 만큼)이고 서버가 셉니다. 팀은 서버가 준 토큰으로 확인하므로 다른 조의 코인을 쓸 수 없습니다.
 - 학생 입력은 모두 "학생이 쓴 자료"로만 취급하고, 그 안의 지시문은 따르지 않습니다.
 
 ## 폴더
 
 ```
-app/        React + Vite 프런트엔드
-scripts/    profile-data.mjs  CSV·README·guides → app/src/data/datasets.json
-            check-guard.mjs   서버 출력 검사 규칙 확인
-supabase/   functions/coach (Edge Function 초안), migrations/ (coach_log)
+app/                     React + Vite 프런트엔드
+  src/backend.js         서버 호출 (VITE_API_URL이 없으면 이 브라우저에 저장하는 시험 모드)
+  src/store.js           팀 기록 상태·저장·동기화
+scripts/                 profile-data.mjs (CSV → datasets.json), check-*.mjs (검사)
+supabase/
+  migrations/            0001 coach_log, 0002 teams·class_settings·merge_game
+  functions/api          팀 만들기·들어가기·저장·동기화, 관리자 기능
+  functions/coach        AI 코치 (Claude)
+  functions/_shared      두 함수가 함께 쓰는 것 (토큰, DB 연결, 코인)
 ```
 
-## 실행
+## 실행 (내 컴퓨터)
 
 ```bash
 cd app
+cp .env.example .env.local   # VITE_API_URL에 서버 주소를 넣는다. 비우면 시험 모드
 npm install
 npm run dev      # http://127.0.0.1:5173
 npm run build
 ```
 
-데이터를 바꾸거나 추가했다면 `bigdata` 저장소를 옆 폴더에 두고 다시 만듭니다.
+서버 주소: `https://ztwozxxtcpchredgukqi.supabase.co/functions/v1` (Supabase 프로젝트 `bigdata-project-web`, 서울)
 
-```bash
-node scripts/profile-data.mjs ../bigdata app/src/data/datasets.json
-```
+## 서버 (Supabase)
+
+- **DB:** `supabase/migrations`의 SQL을 순서대로 SQL Editor에서 실행한다. 모든 테이블은 RLS가 켜져 있고 정책이 없어서 브라우저에서는 직접 읽고 쓸 수 없다. Edge Function(service_role)만 쓴다.
+- **함수 배포:** `api`, `coach` 두 함수 모두 **JWT 검사를 끈다** (`supabase/config.toml`, 또는 `--no-verify-jwt`).
+  ```bash
+  npx supabase login
+  npx supabase link --project-ref ztwozxxtcpchredgukqi
+  npx supabase functions deploy api --no-verify-jwt
+  npx supabase functions deploy coach --no-verify-jwt
+  ```
+  CLI 없이 대시보드 편집기로 올릴 때는 `_shared/common.ts`를 각 함수 파일 위에 붙여 한 파일로 만든다 (처음 배포는 이렇게 했다).
+- **Secrets** (Edge Functions → Secrets):
+  - `ADMIN_PASSWORD` — `/admindara` 비밀번호. 영문·숫자·기호만 (요청 머리글로 보내므로 한글 불가)
+  - `ANTHROPIC_API_KEY` — 코치용. 없으면 코치만 "답을 가져오지 못했어요"가 나고 코인은 줄지 않는다
+  - `COACH_MODEL` (선택, 기본 `claude-haiku-5-5`)
 
 ## 남은 일
 
-1. **저장:** 지금은 브라우저(`localStorage`)에만 저장됩니다. 팀·비밀번호·기록을 Supabase로 옮겨야 다른 기기에서도 이어서 쓸 수 있습니다. (현재 팀 비밀번호는 이 기기 안에서만 확인됩니다.)
-2. **코치 서버:** `supabase/functions/coach`는 배포·실행해 본 적이 없습니다. `ANTHROPIC_API_KEY`는 Edge Function secret으로만 넣고, 프런트에는 넣지 않습니다.
-3. 조 이름 대신 교사가 발급한 조 코드로 호출을 확인해야 다른 조의 한도를 쓰는 것을 막을 수 있습니다.
+1. **Vercel 배포:** Root Directory를 `app`으로, 환경변수 `VITE_API_URL`을 위 서버 주소로 넣는다. `/admindara` 주소는 `app/vercel.json`이 처리한다.
+2. **Secrets 넣기:** `ADMIN_PASSWORD`, `ANTHROPIC_API_KEY`.
+3. 관리자 화면·코치 답변을 실제 서버로 확인하기.
+
+## 검사
+
+```bash
+node scripts/check-guard.mjs     # 코치 출력 검사 규칙
+node scripts/check-quiz.mjs      # 데이터 확인 질문
+node scripts/check-coverage.mjs  # 데이터별 추천 열
+node scripts/check-contrast.mjs  # 글자 색 대비
+```
 
 ## 데이터 출처
 

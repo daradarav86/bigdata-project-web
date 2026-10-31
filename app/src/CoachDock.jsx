@@ -56,7 +56,7 @@ function Coins({ left, spent, total }) {
 }
 
 // 오른쪽 아래의 작은 채팅 상담 버튼. 누르면 작은 채팅 창이 열린다.
-export default function CoachDock({ mode, game, coachOn = true, aiLeft, consumeAi, setChat }) {
+export default function CoachDock({ mode, game, token, coachOn = true, aiLeft, consumeAi, setChat }) {
   const msgs = game.chats[mode]
   const [open, setOpen] = useState(readOpen)
   const [text, setText] = useState('')
@@ -111,7 +111,7 @@ export default function CoachDock({ mode, game, coachOn = true, aiLeft, consumeA
     setBusy(true)
     setError('')
     try {
-      const { reply, remaining } = await askCoach({ mode, team: game.team.trim(), context: contextOf(game), message })
+      const { reply, remaining } = await askCoach({ mode, token, context: contextOf(game), message })
       consumeAi(remaining) // 코인은 답이 온 뒤에 줄어든다 (실패하면 줄지 않는다)
       setChat(mode, [...next, { role: 'coach', text: reply }])
     } catch (e) {

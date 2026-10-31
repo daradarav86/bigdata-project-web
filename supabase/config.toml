@@ -1,0 +1,6 @@
+# 두 함수 모두 팀 토큰·관리자 비밀번호로 직접 확인하므로 Supabase의 JWT 검사는 끈다
+[functions.api]
+verify_jwt = false
+
+[functions.coach]
+verify_jwt = false

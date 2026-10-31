@@ -26,10 +26,10 @@ function TeamPick({ cls, no, setCls, setNo }) {
 }
 
 // 맨 앞 화면: 팀 만들기 / 팀으로 들어가기
-export default function Gate({ createTeam, joinTeam, teamNames }) {
-  const [mode, setMode] = useState(teamNames.length ? 'join' : 'create')
-  const [cls, setCls] = useState('')
-  const [no, setNo] = useState(0)
+export default function Gate({ createTeam, joinTeam, lastTeam, notice, server }) {
+  const [mode, setMode] = useState(lastTeam ? 'join' : 'create')
+  const [cls, setCls] = useState(lastTeam?.cls ?? '') // 이 기기에서 마지막으로 들어간 반·조를 미리 골라 둔다
+  const [no, setNo] = useState(lastTeam?.no ?? 0)
   const [pass, setPass] = useState('')
   const [pass2, setPass2] = useState('')
   const [size, setSize] = useState(4)
@@ -53,6 +53,7 @@ export default function Gate({ createTeam, joinTeam, teamNames }) {
       <h1>{SITE_NAME}</h1>
       <p className="lead">데이터 프로젝트를 하다 막혔을 때, 답이 아니라 <b>다음 한 걸음</b>을 찾도록 돕는 곳이에요. 먼저 우리 팀부터 만들어요.</p>
       <details className="gate-how"><summary>이 사이트는 이렇게 써요</summary><HowTo /></details>
+      {notice && <p className="warn" role="status">{notice}</p>}
 
       <div className="seg gate-tabs" role="tablist" aria-label="팀 선택">
         <button role="tab" aria-selected={mode === 'create'} className={mode === 'create' ? 'on' : ''} onClick={() => { setMode('create'); setErr('') }}><b>새 팀 만들기</b><small>처음 시작해요</small></button>
@@ -94,7 +95,7 @@ export default function Gate({ createTeam, joinTeam, teamNames }) {
           <button className="primary" disabled={busy || !picked || !isPin(pass)} type="submit">들어가기</button>
         </form>
       )}
-      <p className="muted small">지금은 이 기기의 브라우저에 저장돼요. 서버가 연결되면 다른 기기에서도 같은 팀으로 들어올 수 있어요.</p>
+      <p className="muted small">{server ? '기록은 학교 서버에 저장돼요. 다른 기기에서도 반·조와 비밀번호로 같은 팀에 들어올 수 있어요.' : '시험 모드: 이 기기의 브라우저에만 저장돼요.'}</p>
     </div>
   )
 }

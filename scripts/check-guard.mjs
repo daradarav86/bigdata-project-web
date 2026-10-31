@@ -1,7 +1,7 @@
 // 서버 출력 검사(violates)가 기대대로 동작하는지 확인한다. 사용: node scripts/check-guard.mjs
 import fs from 'node:fs'
 
-const src = fs.readFileSync('supabase/functions/coach/index.ts', 'utf8')
+const src = fs.readFileSync('supabase/functions/coach/index.ts', 'utf8').replace(/\r\n/g, '\n') // Windows 줄바꿈도 읽도록
 const block = src.match(/const CODE_LINE[\s\S]*?\nfunction violates[\s\S]*?\n}\n/)[0]
   .replace('(text: string): boolean', '(text)')
   .replace('const blocks', 'const blocks')

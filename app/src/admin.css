@@ -77,3 +77,5 @@
 .ad-toggle.on i { background: var(--ok); }
 .ad-toggle.on i::after { left: 16px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.ad-login { max-width: 360px; margin: 80px auto; display: grid; gap: 12px; }
+.ad-login input { width: 100%; }

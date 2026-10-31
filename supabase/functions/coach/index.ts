@@ -1,22 +1,14 @@
 ﻿// Supabase Edge Function: 학생 질문 → Claude → 규칙 검사 → 응답.
-// 배포 전 필요: secrets ANTHROPIC_API_KEY (필수), COACH_MODEL (선택, 기본 claude-haiku-5-5)
+// 배포 전 필요: secrets ANTHROPIC_API_KEY (필수), COACH_MODEL (선택, 기본 claude-haiku-5-5). 배포할 때 --no-verify-jwt
 // 입력은 자유롭게 받되, 출력은 "되묻기·개념·도구 이름·빈칸 뼈대"까지만 내보낸다.
-// 알려진 한계: 조 이름은 학생이 정하는 값이라 다른 조 이름을 쓰면 그 조의 한도를 쓸 수 있다.
-//   → 운영 전에 교사가 발급한 조 코드(teams 테이블)로 바꾸는 것을 권장. 전체 한도(GLOBAL_LIMIT)가 비용 상한 역할을 한다.
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
+// 팀은 api 함수가 준 토큰으로 확인하므로 다른 조의 코인을 쓸 수 없다. 전체 한도(GLOBAL_LIMIT)가 비용 상한 역할을 한다.
+import { db as client, json, fail, CORS, TEAM_AI, teamOf, settingsOf, coinsOf } from '../_shared/common.ts'
 
-const TEAM_LIMIT = 10 // 팀당 총 10번 (하루 단위가 아니다)
 const GLOBAL_LIMIT = 2000 // 전체 하루 (비용 상한)
 const MAX_MESSAGE = 800
 const MODEL = Deno.env.get('COACH_MODEL') ?? 'claude-haiku-5-5'
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
 const cut = (v: unknown, n: number) => String(v ?? '미정').slice(0, n)
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } })
 
 const RULES = `너는 고등학생의 파이썬(pandas) 데이터 분석 프로젝트를 돕는 코치다. 학생이 스스로 생각하도록 돕는 것이 목적이다.
 수업 흐름: 미션 0 불러오기 → 1 구조 확인(shape, columns, info) → 2 빈칸 처리(isnull().sum(), dropna(), fillna(), df.copy()) → 3 그룹별 분석(value_counts, dtypes, groupby("기준")["열"].mean(), 새 열) → 4 그래프(result.plot(kind="bar"/"line"), title/xlabel/ylabel은 영어) → 해석(① 사실 ② 비교 ③ 의미 + 한계).
@@ -61,22 +53,30 @@ async function callClaude(system: string, messages: { role: string; content: str
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   try {
-    const { mode, team, context, message } = await req.json()
-    if (!['plan', 'code'].includes(mode) || typeof team !== 'string' || !team.trim() || team.length > 20) return json({ error: 'bad request' }, 400)
-    if (typeof message !== 'string' || !message.trim() || message.length > MAX_MESSAGE) return json({ error: 'bad message' }, 400)
+    const { mode, token, context, message } = await req.json()
+    if (!['plan', 'code'].includes(mode)) return fail(400, 'bad_mode', '알 수 없는 요청이에요.')
+    if (typeof message !== 'string' || !message.trim() || message.length > MAX_MESSAGE) return fail(400, 'bad_message', `질문은 ${MAX_MESSAGE}자까지 쓸 수 있어요.`)
 
-    const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+    // 팀은 api 함수가 준 토큰으로 확인한다 (학생이 보낸 팀 이름을 믿지 않는다)
+    const db = client()
+    const t = await teamOf(db, token)
+    if (!t) return fail(401, 'auth', '팀 정보가 바뀌었거나 지워졌어요. 다시 들어가 주세요.')
+    const team = t.key
 
     // 전체 호출 상한(비용 보호)만 한국 시간 하루 단위로 센다 (KST 자정 = 전날 15:00 UTC). 팀 코인은 하루와 무관하다.
     const since = new Date(); since.setUTCHours(15, 0, 0, 0)
     if (since.getTime() > Date.now()) since.setUTCDate(since.getUTCDate() - 1)
     const sinceIso = since.toISOString()
 
-    const [{ count: teamCount }, { count: allCount }] = await Promise.all([
-      db.from('coach_log').select('id', { count: 'exact', head: true }).eq('team', team), // 팀의 지금까지 전체 횟수
+    const [settings, coins, { count: allCount }] = await Promise.all([
+      settingsOf(db, t.cls),
+      coinsOf(db, t), // 팀이 지금까지 쓴 횟수와 선생님이 더 준 코인
       db.from('coach_log').select('id', { count: 'exact', head: true }).gte('created_at', sinceIso),
     ])
-    if ((teamCount ?? 0) >= TEAM_LIMIT || (allCount ?? 0) >= GLOBAL_LIMIT) return json({ error: 'limit' }, 429)
+    if (!settings.coach) return fail(403, 'coach_off', '선생님이 지금은 코치를 닫아 두었어요.')
+    const limit = TEAM_AI + coins.bonus
+    if (coins.used >= limit) return fail(429, 'limit', '우리 팀 코인을 모두 썼어요. 더 필요하면 선생님께 말씀드려요.')
+    if ((allCount ?? 0) >= GLOBAL_LIMIT) return fail(429, 'global_limit', '오늘은 코치를 더 쓸 수 없어요. 내일 다시 해 보세요.')
 
     // 이전 대화는 클라이언트가 보낸 것이 아니라 서버 기록에서 읽는다 (가짜 코치 발언 주입 방지)
     const { data: prev } = await db.from('coach_log').select('message, reply')
@@ -98,9 +98,9 @@ Deno.serve(async req => {
     }
 
     await db.from('coach_log').insert({ team, mode, message, reply, flagged })
-    return json({ reply, remaining: TEAM_LIMIT - (teamCount ?? 0) - 1 })
+    return json({ reply, remaining: limit - coins.used - 1 })
   } catch (e) {
     console.error(e)
-    return json({ error: 'server' }, 500)
+    return fail(500, 'server', '답을 가져오지 못했어요. 잠시 뒤 다시 해 보세요.')
   }
 })
