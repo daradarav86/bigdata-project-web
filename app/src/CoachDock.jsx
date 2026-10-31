@@ -1,14 +1,33 @@
 ﻿import { useEffect, useRef, useState } from 'react'
 import { askCoach } from './api.js'
 import { contextOf } from './doc.js'
-import { DAILY_AI } from './store.js'
+import { TEAM_AI } from './store.js'
 
 const MAX_CHARS = 800
 const MAX_INPUT_PX = 96
 const OPEN_KEY = 'coach-widget-open'
+// 예시 질문: 이미 물어본 것은 빼고 앞에서부터 3개씩 보여 준다
 const EXAMPLES = {
-  plan: ['이 데이터로 어떤 비교가 가능한지 모르겠어요', '내 질문이 너무 넓은지 봐 주세요', '예상을 어떻게 세워야 할지 모르겠어요'],
-  code: ['결과가 NaN으로 나와요', 'groupby를 어떻게 시작할지 모르겠어요', '그래프에 막대가 너무 많아요'],
+  plan: [
+    '우리 진로와 이 데이터가 잘 맞는지 궁금해요',
+    '이 데이터로 어떤 비교가 가능한지 모르겠어요',
+    '진로 장면에서 고민을 어떻게 떠올릴지 모르겠어요',
+    '묶는 기준을 어떤 열로 정하면 좋을지 모르겠어요',
+    '내 질문이 너무 넓은지 봐 주세요',
+    '그래프의 가로축과 세로축을 어떻게 정할지 모르겠어요',
+    '결측값(NaN)을 어떻게 처리할지 모르겠어요',
+    '예상을 어떻게 세워야 할지 모르겠어요',
+  ],
+  code: [
+    '결과가 NaN으로 나와요',
+    'groupby를 어떻게 시작할지 모르겠어요',
+    '열 이름을 썼는데 KeyError가 나요',
+    '결측값(NaN)을 확인하는 코드가 궁금해요',
+    '그래프에 막대가 너무 많아요',
+    '새 열을 만드는 방법이 궁금해요',
+    '그래프 제목과 축 이름은 어떻게 붙여요?',
+    '결과를 어떻게 읽어야 할지 모르겠어요',
+  ],
 }
 const PLACEHOLDER = {
   plan: '막힌 곳을 써 보세요',
@@ -24,11 +43,11 @@ function Reply({ text }) {
   )
 }
 
-// 코인: 하루에 물어볼 수 있는 횟수. 보낼 때마다 한 개씩 줄어드는 것이 눈에 보이게 한다.
+// 코인: 팀이 코치에게 물어볼 수 있는 총 횟수. 보낼 때마다 한 개씩 줄어드는 것이 눈에 보이게 한다.
 function Coins({ left, spent }) {
   return (
     <div className="coins" role="img" aria-label={'남은 코인 ' + left + '개'}>
-      {Array.from({ length: DAILY_AI }, (_, i) => (
+      {Array.from({ length: TEAM_AI }, (_, i) => (
         <i key={i} className={(i < left ? '' : 'empty ') + (spent === i ? 'spent' : '')} />
       ))}
       {spent !== null && <b className="minus" aria-hidden="true">−1</b>}
@@ -109,6 +128,12 @@ export default function CoachDock({ mode, game, aiLeft, consumeAi, setChat }) {
   }
   const title = mode === 'plan' ? '기획 코치' : '코드 코치'
 
+  // 질문이 끝나면(마지막이 코치의 답일 때) 아직 안 물어본 예시 질문을 3개 다시 보여 준다
+  const asked = new Set(msgs.filter(m => m.role === 'user').map(m => m.text))
+  const suggestions = EXAMPLES[mode].filter(e => !asked.has(e)).slice(0, 3)
+  const lastIsCoach = msgs.length === 0 || msgs[msgs.length - 1].role === 'coach'
+  const showChips = aiLeft > 0 && !busy && lastIsCoach && suggestions.length > 0
+
   return (
     <div className="cw">
       {open && (
@@ -121,13 +146,13 @@ export default function CoachDock({ mode, game, aiLeft, consumeAi, setChat }) {
 
           <div className={'cw-coins' + (low ? ' low' : '')}>
             <div className="cw-coinrow">
-              <b>코인 {aiLeft}/{DAILY_AI}</b>
+              <b>우리 팀 코인 {aiLeft}/{TEAM_AI}</b>
               <Coins left={aiLeft} spent={spent} />
             </div>
             <p>
               {aiLeft <= 0
-                ? '오늘 코인을 모두 썼어요. 내일 다시 쓸 수 있어요.'
-                : '코치는 하루 ' + DAILY_AI + '번만 물어볼 수 있어요. 한 번 보낼 때마다 코인 1개가 줄어요.' + (low ? ' 꼭 필요할 때 쓰세요!' : '')}
+                ? '우리 팀 코인을 모두 썼어요. 더 필요하면 선생님께 말씀드려요.'
+                : '코치는 팀당 ' + TEAM_AI + '번만 물어볼 수 있어요. 한 번 보낼 때마다 코인 1개가 줄고, 다시 채워지지 않아요.' + (low ? ' 꼭 필요할 때 쓰세요!' : '')}
             </p>
             {note && <p className="cw-note" role="status">{note}</p>}
           </div>
@@ -145,18 +170,21 @@ export default function CoachDock({ mode, game, aiLeft, consumeAi, setChat }) {
             <div ref={end} />
           </div>
 
-          {msgs.length === 0 && aiLeft > 0 && (
-            <div className="chips cw-chips" aria-label="질문 예시">
-              {EXAMPLES[mode].map(e => (
-                <button key={e} type="button" onClick={() => { setText(e); input.current?.focus() }}>{e}</button>
-              ))}
+          {showChips && (
+            <div className="cw-suggest">
+              <small className="muted">{msgs.length === 0 ? '이런 걸 물어볼 수 있어요 (눌러서 고쳐 보내요)' : '이어서 물어볼 만한 질문'}</small>
+              <div className="chips cw-chips" aria-label="질문 예시">
+                {suggestions.map(e => (
+                  <button key={e} type="button" onClick={() => { setText(e); input.current?.focus() }}>{e}</button>
+                ))}
+              </div>
             </div>
           )}
           {error && <p className="warn small cw-err" role="alert">{error}</p>}
 
           <div className="cw-input">
             <textarea ref={input} rows={1} maxLength={MAX_CHARS} value={text} aria-label={title + '에게 보낼 글'}
-              placeholder={aiLeft <= 0 ? '오늘 코인을 모두 썼어요' : PLACEHOLDER[mode]} disabled={aiLeft <= 0}
+              placeholder={aiLeft <= 0 ? '우리 팀 코인을 모두 썼어요' : PLACEHOLDER[mode]} disabled={aiLeft <= 0}
               onChange={e => setText(e.target.value)} onKeyDown={onKey} />
             <button type="button" className="primary" onClick={send} disabled={busy || !text.trim() || aiLeft <= 0 || noTeam}>보내기</button>
           </div>

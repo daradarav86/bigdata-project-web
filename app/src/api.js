@@ -16,7 +16,7 @@ export async function askCoach({ mode, team, context, message }) {
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${KEY}` },
     body: JSON.stringify({ mode, team, context, message }),
   })
-  if (res.status === 429) throw new Error('오늘 AI 질문을 모두 썼어요. 내일 다시 쓸 수 있어요.')
+  if (res.status === 429) throw new Error('우리 팀 코인을 모두 썼어요. 더 필요하면 선생님께 말씀드려요.')
   if (!res.ok) throw new Error('답을 가져오지 못했어요. 잠시 뒤 다시 해 보세요.')
   return res.json()
 }

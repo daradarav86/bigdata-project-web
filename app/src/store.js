@@ -1,7 +1,7 @@
 ﻿import { useEffect, useRef, useState } from 'react'
 
 const KEY = 'data-detective-v5'
-export const DAILY_AI = 10
+export const TEAM_AI = 10 // 코치는 팀당 총 10번 (하루 단위가 아니다)
 export const MAX_MEMBERS = 6
 
 const member = () => ({ id: '', name: '', career: '', job: '' })
@@ -23,7 +23,7 @@ export const START = {
   rowMeaning: '', usedCols: [],
   missingMethod: '', missingWhy: '', newCol: '', codeDesign: '',
   deck: {}, // 발표 슬라이드 입력 (결과·해석·진로 연결·Q&A 등)
-  ai: { day: '', used: 0 }, chats: { plan: [], code: [] }, // 코치 코인(하루 사용 횟수)과 대화 기록
+  ai: { used: 0 }, chats: { plan: [], code: [] }, // 코치 코인(지금까지 쓴 횟수)과 대화 기록
 }
 
 // 새로 생긴 항목이 없는 예전 기록도 열리도록 기본값을 채운다
@@ -32,9 +32,6 @@ function withDefaults(g) {
   if (!g.concernParts && g.concern) out.concernParts = [g.concern, ''] // 예전에 한 칸으로 쓴 고민을 첫 번째 칸으로
   return out
 }
-
-// 서버의 하루 한도(한국 시간 자정 기준)와 같은 날짜 기준을 쓴다
-const today = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)
 
 const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('')
 const newSalt = () => hex(crypto.getRandomValues(new Uint8Array(8)))
@@ -74,12 +71,12 @@ export function useGame() {
   const setSize = n => patch(g => ({ size: n, members: Array.from({ length: n }, (_, i) => g.members[i] ?? member()) }))
   const setMember = (i, p) => patch(g => ({ members: g.members.map((m, j) => (j === i ? { ...m, ...p } : m)) }))
 
-  const aiLeft = game.ai.day === today() ? Math.max(0, DAILY_AI - game.ai.used) : DAILY_AI
+  // 코인은 팀당 총 TEAM_AI번. 날짜로 다시 채워지지 않는다 (더 필요하면 선생님이 정한다).
+  const aiLeft = Math.max(0, TEAM_AI - game.ai.used)
   // remaining: 서버가 알려 준 남은 횟수가 있으면 그것을 따른다 (기기가 달라도 맞도록)
-  const consumeAi = remaining => patch(g => {
-    const used = Number.isInteger(remaining) ? DAILY_AI - remaining : (g.ai.day === today() ? g.ai.used : 0) + 1
-    return { ai: { day: today(), used } }
-  })
+  const consumeAi = remaining => patch(g => ({
+    ai: { used: Number.isInteger(remaining) ? TEAM_AI - remaining : g.ai.used + 1 },
+  }))
   const setChat = (mode, msgs) => patch(g => ({ chats: { ...g.chats, [mode]: msgs.slice(-20) } }))
 
   // 팀 만들기: { name, pass, size, members } → { ok, error }

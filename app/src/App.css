@@ -349,3 +349,13 @@ details summary { cursor: pointer; }
 .recap p { margin: 0; }
 .recap p span { font-weight: 700; margin-right: 6px; }
 @media (prefers-color-scheme: dark) { .recap { background: #3a3220; color: #f3dca0; } }
+
+/* ---------- 예시 보기 · 코치의 이어서 묻기 ---------- */
+.example { border: 1.5px dashed #2e9d6a; border-radius: 12px; padding: 8px 14px; background: color-mix(in srgb, #2e9d6a 6%, transparent); }
+.example > summary { cursor: pointer; color: #1f7a50; font-weight: 700; }
+@media (prefers-color-scheme: dark) { .example > summary { color: #7be0ae; } }
+.example dl { margin: 8px 0 4px; display: grid; gap: 8px; }
+.example dt { font-weight: 700; font-size: .9rem; }
+.example dd { margin: 0; white-space: pre-wrap; font-size: .92rem; }
+.exblock { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.cw-suggest { display: grid; gap: 4px; }

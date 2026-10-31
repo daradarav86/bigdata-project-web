@@ -5,6 +5,7 @@ import { PLAN_STEPS, stepDone, draftQuestion, checkCodeDesign, buildPlanText, pc
 import { reviewQuestion } from './coach.js'
 import { Text, Seg, Think, Stuck } from './ui.jsx'
 import { exportPlanDocx } from './exportDoc.js'
+import { EXAMPLE_TITLE, EXAMPLE_STEPS, EXAMPLE_ORDER } from './data/examples.js'
 
 const dsName = d => `${d.field} · ${d.desc}`
 const tokens = s => s.split(/[\s,·/()]+/).filter(t => t.length >= 2)
@@ -551,6 +552,34 @@ const STUCK = {
 
 const RIGHT = { team: TeamStep, career: CareerStep, data: DataStep, scene: SceneStep, question: QuestionStep, understand: UnderstandStep, method: MethodStep, summary: SummaryStep }
 
+// 단계마다 접어 둔 예시. 열어 보고 "이런 느낌으로 쓰는구나"를 잡는 용도라서, 그대로 베끼지 않게 안내한다.
+function ExampleBox({ id }) {
+  if (id === 'team') return null
+  if (id === 'summary') {
+    return (
+      <details className="example">
+        <summary>{EXAMPLE_TITLE} — 완성된 기획안 전체</summary>
+        <p className="hint">처음부터 끝까지 이렇게 이어져요. 그대로 베끼지 말고 우리 팀의 진로와 데이터로 써요.</p>
+        {EXAMPLE_ORDER.map(([name, key]) => (
+          <div key={key} className="exblock">
+            <b>{name}</b>
+            <dl>{EXAMPLE_STEPS[key].map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+          </div>
+        ))}
+      </details>
+    )
+  }
+  const items = EXAMPLE_STEPS[id]
+  if (!items) return null
+  return (
+    <details className="example">
+      <summary>{EXAMPLE_TITLE}</summary>
+      <p className="hint">이런 느낌으로 써요. 그대로 베끼지 말고 우리 팀 이야기로 바꿔 써요.</p>
+      <dl>{items.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+    </details>
+  )
+}
+
 export default function Plan(props) {
   const { game, go: goTab } = props
   const [id, setId] = useState(PLAN_STEPS.find(s => !stepDone(s.id, game))?.id ?? 'summary')
@@ -576,6 +605,7 @@ export default function Plan(props) {
       </nav>
       <section className="stage">
         <header><small>{idx + 1} / {PLAN_STEPS.length}</small><h2>{PLAN_STEPS[idx].name}</h2></header>
+        <ExampleBox id={id} />
         <Step {...props} go={go} />
         <Stuck items={STUCK[id]} />
         <div className="row pager">

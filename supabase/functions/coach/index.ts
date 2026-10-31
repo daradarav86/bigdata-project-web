@@ -5,7 +5,7 @@
 //   → 운영 전에 교사가 발급한 조 코드(teams 테이블)로 바꾸는 것을 권장. 전체 한도(GLOBAL_LIMIT)가 비용 상한 역할을 한다.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
-const DAILY_LIMIT = 10 // 조별 하루
+const TEAM_LIMIT = 10 // 팀당 총 10번 (하루 단위가 아니다)
 const GLOBAL_LIMIT = 2000 // 전체 하루 (비용 상한)
 const MAX_MESSAGE = 800
 const MODEL = Deno.env.get('COACH_MODEL') ?? 'claude-haiku-5-5'
@@ -67,20 +67,20 @@ Deno.serve(async req => {
 
     const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
-    // 한국 시간 자정부터 센다 (KST 자정 = 전날 15:00 UTC)
+    // 전체 호출 상한(비용 보호)만 한국 시간 하루 단위로 센다 (KST 자정 = 전날 15:00 UTC). 팀 코인은 하루와 무관하다.
     const since = new Date(); since.setUTCHours(15, 0, 0, 0)
     if (since.getTime() > Date.now()) since.setUTCDate(since.getUTCDate() - 1)
     const sinceIso = since.toISOString()
 
     const [{ count: teamCount }, { count: allCount }] = await Promise.all([
-      db.from('coach_log').select('id', { count: 'exact', head: true }).eq('team', team).gte('created_at', sinceIso),
+      db.from('coach_log').select('id', { count: 'exact', head: true }).eq('team', team), // 팀의 지금까지 전체 횟수
       db.from('coach_log').select('id', { count: 'exact', head: true }).gte('created_at', sinceIso),
     ])
-    if ((teamCount ?? 0) >= DAILY_LIMIT || (allCount ?? 0) >= GLOBAL_LIMIT) return json({ error: 'limit' }, 429)
+    if ((teamCount ?? 0) >= TEAM_LIMIT || (allCount ?? 0) >= GLOBAL_LIMIT) return json({ error: 'limit' }, 429)
 
     // 이전 대화는 클라이언트가 보낸 것이 아니라 서버 기록에서 읽는다 (가짜 코치 발언 주입 방지)
     const { data: prev } = await db.from('coach_log').select('message, reply')
-      .eq('team', team).eq('mode', mode).gte('created_at', sinceIso).order('created_at', { ascending: false }).limit(3)
+      .eq('team', team).eq('mode', mode).order('created_at', { ascending: false }).limit(3)
     const past = (prev ?? []).reverse().flatMap(r => [
       { role: 'user', content: `<student_input>\n${r.message}\n</student_input>` },
       { role: 'assistant', content: r.reply },
@@ -98,7 +98,7 @@ Deno.serve(async req => {
     }
 
     await db.from('coach_log').insert({ team, mode, message, reply, flagged })
-    return json({ reply, remaining: DAILY_LIMIT - (teamCount ?? 0) - 1 })
+    return json({ reply, remaining: TEAM_LIMIT - (teamCount ?? 0) - 1 })
   } catch (e) {
     console.error(e)
     return json({ error: 'server' }, 500)
