@@ -137,4 +137,25 @@ export function buildPlanText(g) {
   return L.join('\n')
 }
 
+// 노트북 맨 위 칸에 붙일 "우리 팀 설계 메모" (# 주석). 기획에서 정한 선택만 담고 정답 코드는 넣지 않는다.
+export function buildCodeMemo(g) {
+  const ds = getDs(g.dataset)
+  const s = statFor(g), c = chartFor(g), mm = missingOf(g.missingMethod)
+  const lines = [
+    '# [우리 팀 설계] 기획안에서 가져왔어요',
+    `# 질문: ${g.question || '(아직 없음)'}`,
+    `# 데이터: ${ds ? ds.id + '.csv' : '(아직 없음)'}`,
+    `# 묶는 기준: ${g.groupBy || '(아직 없음)'}`,
+    `# 계산할 것: ${isFreq(g) ? '빈도(그룹별 개수) → value_counts()' : `${g.measure || '(아직 없음)'}의 ${s.ko} → ${s.fn}`}`,
+    `# 빈칸 처리: ${mm ? mm.ko : '(아직 없음)'}${g.missingWhy ? ' — ' + g.missingWhy : ''}`,
+    `# 그래프: ${c.ko}`,
+  ]
+  if (g.newCol.trim()) lines.push(`# 새 열: ${g.newCol}`)
+  if (g.codeDesign.trim()) {
+    lines.push('# 우리가 설계한 코드 (기획안 3-3):')
+    g.codeDesign.trim().split('\n').forEach(l => lines.push('#   ' + l))
+  }
+  return lines.join('\n')
+}
+
 export { getDs, getCol }

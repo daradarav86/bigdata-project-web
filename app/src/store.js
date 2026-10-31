@@ -21,9 +21,7 @@ export const START = {
   title: '',
   rowMeaning: '', usedCols: [],
   missingMethod: '', missingWhy: '', newCol: '', codeDesign: '',
-  deck: {}, // 발표 슬라이드 입력 (결과·해석·진로 연결·Q&A 등)
-  cells: {}, // 코드 칸별로 학생이 고친 파이썬 코드 (칸 id → 코드). 없으면 기본 틀을 쓴다
-  ai: { day: '', used: 0 }, chats: { plan: [], code: [] },
+  deck: {}, // 발표 슬라이드 입력 (결과·해석·진로 연결·Q&A 등)  ai: { day: '', used: 0 }, chats: { plan: [], code: [] },
 }
 
 // 새로 생긴 항목이 없는 예전 기록도 열리도록 기본값을 채운다

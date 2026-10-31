@@ -341,28 +341,3 @@ details summary { cursor: pointer; }
 .cw-foot { text-align: center; }
 @media (max-width: 520px) { .cw { right: 10px; bottom: 10px; } .cw-panel { width: calc(100vw - 20px); max-height: 76vh; } }
 @media print { .cw { display: none; } }
-/* ---------- 사이트 안 파이썬 코드 칸 ---------- */
-.pystatus { display: grid; gap: 6px; }
-.pystatus p { margin: 0; }
-.bar.indeterminate span { width: 35%; animation: indet 1.4s ease-in-out infinite; }
-@keyframes indet { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
-@media (prefers-reduced-motion: reduce) { .bar.indeterminate span { animation: none; width: 100%; opacity: .5; } }
-.design dl { margin: 0; }
-.cell header { display: flex; align-items: baseline; gap: 10px; }
-.cell header h3 { margin: 0; }
-.cell .ran { margin-left: auto; color: var(--ok); font-size: .82rem; font-weight: 700; }
-.cell textarea.code { background: #0f172a; color: #e6edf7; border-color: #1f2a44; min-height: 4.5rem; tab-size: 4; }
-.py-out { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; overflow-x: auto; background: var(--bg); }
-.py-text { margin: 0; white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; font-size: .86rem; }
-.py-html { overflow-x: auto; }
-.pytable { border-collapse: collapse; font-size: .84rem; }
-.pytable th, .pytable td { padding: 4px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
-.pytable thead th { background: var(--blue-soft); }
-.pytable tbody th { text-align: left; background: transparent; }
-.py-img { max-width: 100%; height: auto; border-radius: 8px; background: #fff; }
-.py-err { border: 2px solid var(--warn); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; }
-.py-err > b { color: var(--warn); }
-.py-err p { margin: 0; }
-.helpfold { border: 1.5px dashed var(--line); border-radius: 12px; padding: 8px 14px; }
-.helpfold > summary { cursor: pointer; font-weight: 700; color: var(--blue); }
-.helpfold > .stack { margin-top: 12px; }

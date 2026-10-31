@@ -1,7 +1,7 @@
 ﻿import { useState } from 'react'
 import { TOPICS, ERRORS, SYMPTOMS, TERMS } from './data/hints.js'
 import { TabIntro } from './Guide.jsx'
-import CodeLab from './CodeLab.jsx'
+import { buildCodeMemo } from './doc.js'
 
 function Ladder({ topic }) {
   const [level, setLevel] = useState(1)
@@ -72,27 +72,39 @@ function Glossary() {
   )
 }
 
-export default function Code({ game, patch, setDeck, py, out, setOut }) {
+// 기획에서 정한 내용을 Colab 노트북 첫 칸에 붙여 넣을 주석으로 만들어 준다 (정답 코드는 아니고 우리 팀의 선택만 담는다)
+function DesignMemo({ game }) {
+  const [copied, setCopied] = useState(false)
+  const memo = buildCodeMemo(game)
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(memo); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch { /* 복사 불가 환경 */ }
+  }
+  return (
+    <section className="panel">
+      <h3>우리 팀 설계 메모 <small className="muted">기획에서 정한 것을 노트북으로 가져가요</small></h3>
+      <p className="hint">아래 메모를 복사해서 프로젝트 노트북의 맨 위 칸에 붙여 두면, 코딩하다가 우리가 무엇을 하기로 했는지 바로 볼 수 있어요. 메모는 <code>#</code> 주석이라 실행에는 영향이 없어요.</p>
+      <pre className="frame">{memo}</pre>
+      <button type="button" className="primary" onClick={copy}>{copied ? '복사됨' : '메모 복사'}</button>
+    </section>
+  )
+}
+
+export default function Code({ game }) {
   const [id, setId] = useState(TOPICS[0].id)
   const topic = TOPICS.find(t => t.id === id)
   return (
     <div className="stack">
-      <TabIntro>이 사이트에서 파이썬 코드를 직접 쓰고 실행해요. 칸을 위에서부터 차례로 실행하고, 막히면 ① 아래 "막힐 때" 도움말 → ② 오류 메시지 해독 → ③ 오른쪽 아래 코치 순서로 도움을 받아요.</TabIntro>
-      <CodeLab game={game} patch={patch} setDeck={setDeck} py={py} out={out} setOut={setOut} />
-      <details className="helpfold">
-        <summary>막힐 때 보는 도움말 (힌트 · 오류 해독기 · 용어 풀이)</summary>
-        <div className="stack">
-        <section className="panel">
-          <h3>어떤 부분에서 막혔나요?</h3>
-          <div className="chips">
-            {TOPICS.map(t => <button key={t.id} aria-pressed={id === t.id} className={id === t.id ? 'on' : ''} onClick={() => setId(t.id)}>{t.name}</button>)}
-          </div>
-          <Ladder key={id} topic={topic} />
-        </section>
-        <ErrorDecoder />
-        <Glossary />
+      <TabIntro>코드는 Colab 노트북에서 실행해요. 이 탭에서는 우리 팀의 설계를 노트북으로 가져가고, 막히면 ① 막힌 부분을 고르고 → ② 힌트를 1단계부터 읽고 → ③ 오류 메시지는 해독기에 붙여 넣고 → ④ 그래도 안 되면 오른쪽 아래 코치에게 물어요.</TabIntro>
+      <DesignMemo game={game} />
+      <section className="panel">
+        <h3>어떤 부분에서 막혔나요?</h3>
+        <div className="chips">
+          {TOPICS.map(t => <button key={t.id} aria-pressed={id === t.id} className={id === t.id ? 'on' : ''} onClick={() => setId(t.id)}>{t.name}</button>)}
         </div>
-      </details>
+        <Ladder key={id} topic={topic} />
+      </section>
+      <ErrorDecoder />
+      <Glossary />
     </div>
   )
 }
