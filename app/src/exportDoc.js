@@ -1,5 +1,5 @@
 ﻿import { getDs } from './data/meta.js'
-import { statOf, frameOf, missingOf, nameOf } from './doc.js'
+import { statFor, chartFor, isFreq, measureName, concernText, frameOf, missingOf, nameOf } from './doc.js'
 
 // 기획안을 Word(.docx)로 만든다. Drive에 올려 "Google 문서로 열기"를 하면 구글 문서에서 이어서 쓸 수 있다.
 // 번호와 제목은 [템플릿] 데이터 프로젝트 기획안 v2를 따른다. 4번(분석 결과)은 쓴 만큼만 채우고 나머지는 안내 문구를 둔다.
@@ -23,7 +23,7 @@ export function buildPlanDocx(g, docx) {
   const { Document, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType } = docx
   const ds = getDs(g.dataset)
   const d = g.deck ?? {}
-  const s = statOf(g.stat), f = frameOf(g.frame), mm = missingOf(g.missingMethod)
+  const s = statFor(g), c = chartFor(g), f = frameOf(g.frame), mm = missingOf(g.missingMethod)
   const W = 9638 // A4 폭 11906 − 좌우 여백 2268 (DXA)
 
   const lines = t => String(t ?? '').split('\n')
@@ -56,9 +56,9 @@ export function buildPlanDocx(g, docx) {
   const blanks = ds ? ds.columns.filter(c => c.missing > 0).map(c => `${c.name} ${c.missing}개`).join(', ') : ''
   const spk = d.speakers ?? []
   const interp = [
-    `① 사실: ${g.groupBy}별 ${g.measure}의 ${s.ko}은 ${d.hi || '___'}이(가) 가장 높고(${d.hiVal || '___'}), ${d.lo || '___'}이(가) 가장 낮았다(${d.loVal || '___'}).`,
+    `① 사실: ${g.groupBy}별 ${isFreq(g) ? '개수(빈도)는' : `${g.measure}의 ${s.topic}`} ${d.hi || '___'}이(가) 가장 높고(${d.hiVal || '___'}), ${d.lo || '___'}이(가) 가장 낮았다(${d.loVal || '___'}).`,
     `② 비교: 두 집단의 차이는 ${d.diffPts ? d.diffPts + '점' : '___'}로, ${d.diffX || '___'}배 정도였다.`,
-    `③ 의미: 이는 ${d.m1 || g.groupBy} 와(과) ${d.m2 || g.measure} 가 함께 움직이는 경향이 있음을 보여 준다.`,
+    `③ 의미: 이는 ${d.m1 || g.groupBy} 와(과) ${d.m2 || measureName(g)} 가 함께 움직이는 경향이 있음을 보여 준다.`,
   ].join('\n')
 
   const body = [
@@ -83,7 +83,7 @@ export function buildPlanDocx(g, docx) {
     H2('STEP 2. 데이터 고르기'),
     ...P(ds ? `${ds.field} 분야 → ${ds.id}.csv (${ds.desc})` : ''),
     H2('STEP 3. 진로 장면에서 궁금한 점'),
-    table([0.4, 0.6], [['떠올리기', '우리 팀의 답'], ['① 가장 자주 고민하는 것', g.concern], ['② 비교하고 싶은 집단', g.groupsAsk], ['③ 확인할 숫자', g.numberAsk]]),
+    table([0.4, 0.6], [['떠올리기', '우리 팀의 답'], ['① 판단이 필요한 순간과 고민', concernText(g)], ['② 비교하고 싶은 집단', g.groupsAsk], ['③ 확인할 숫자', g.numberAsk]]),
     H3('1-1. 우리 팀의 진로 키워드와 이유'), ...P(`${g.keyword} — ${g.keywordWhy}`),
     H3(`1-2. 우리 팀의 탐구 질문 (질문 틀 ${g.frame}: ${f.name})`), ...P(g.question, { bold: true }),
     H3('1-3. 이 질문이 진로에서 중요한 장면'), ...P(g.scene),
@@ -102,14 +102,15 @@ export function buildPlanDocx(g, docx) {
 
     H1('3. 분석 계획'),
     H3('3-1. 한 문장 소개'),
-    ...P(`우리 팀은 ${ds ? ds.id : '___'} 데이터에서 ${g.groupBy}(으)로 묶어 ${g.measure}의 ${s.ko}를 비교하고, ${g.chart === 'line' ? '선' : '막대'}그래프로 나타냅니다.`),
+    ...P(`우리 팀은 ${ds ? ds.id : '___'} 데이터에서 ${g.groupBy}(으)로 묶어 ${isFreq(g) ? '개수(빈도)를' : `${g.measure}의 ${s.obj}`} 비교하고, ${c.short}그래프로 나타냅니다.`),
     H3('3-2. 단계별 분석 계획표'),
     table([0.1, 0.25, 0.65], [
       ['단계', '정할 것', '우리 팀의 선택'],
-      ['①', '묶는 기준', g.groupBy], ['②', '계산할 열', g.measure], ['③', '통계 함수', s.fn],
+      ['①', '묶는 기준', g.groupBy], ['②', '계산할 것', isFreq(g) ? '빈도(그룹별 개수)' : g.measure], ['③', '통계', isFreq(g) ? '개수(count / value_counts)' : s.fn],
       ['④', '빈칸 처리', `${mm ? mm.ko : ''}\n${g.missingWhy}`],
-      ['⑤', '그래프 종류', g.chart], ['⑥', '새 열 (선택)', g.newCol || '이번에는 만들지 않음'],
+      ['⑤', '그래프 종류', c.ko], ['⑥', '새 열 (선택)', g.newCol || '이번에는 만들지 않음'],
       ['⑦', '결과 읽는 방법', '가장 큰 그룹, 가장 작은 그룹, 그 차이(큰 값 − 작은 값)를 숫자로 말하기'],
+      ...(g.extraCompare.trim() ? [['⑧', '더 비교해 보고 싶은 것', g.extraCompare]] : []),
     ]),
     H3('3-3. 코드 미리 설계하기'), ...P(g.codeDesign, { mono: true }),
     H3('3-4. 필수 미션 체크'),

@@ -296,3 +296,11 @@ details summary { cursor: pointer; }
 
 .howto-docs { background: var(--blue-soft); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; }
 .howto-docs ol { margin: 4px 0; padding-left: 20px; }
+
+/* ---------- 진로 장면(여러 질문)·숫자 예시 ---------- */
+.scenebox { border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 14px; }
+.scenebox h3 { margin: 0; }
+.statex { background: var(--blue-soft); border-radius: 12px; padding: 12px 14px; }
+.statex ul { margin: 6px 0 0; padding-left: 0; list-style: none; display: grid; gap: 4px; }
+.statex li { display: grid; grid-template-columns: 72px 1fr; gap: 8px; font-size: .92rem; }
+.statex li span { color: var(--muted); }

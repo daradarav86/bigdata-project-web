@@ -12,7 +12,10 @@ export const START = {
   keyword: '', keywordWhy: '',
   dataset: '',
   concern: '', groupsAsk: '', numberAsk: '',
+  concernParts: ['', '', '', ''], // 진로 장면 ①: 여러 질문에 쓴 답 (concern에는 합친 글이 들어간다)
   frame: 'A', groupBy: '', measure: '', stat: 'mean', chart: 'bar',
+  measureMode: 'column', // 'column': 숫자 열의 통계 / 'freq': 그룹별 개수(빈도)
+  statEtc: '', chartEtc: '', extraCompare: '',
   question: '', reviews: [], // reviews: 질문 검토 기록 (최대 5회) [{ text, picks, score, pass, at }]
   scene: '', extraQ: '', expect: '',
   title: '',
@@ -20,6 +23,13 @@ export const START = {
   missingMethod: '', missingWhy: '', newCol: '', codeDesign: '',
   deck: {}, // 발표 슬라이드 입력 (결과·해석·진로 연결·Q&A 등)
   ai: { day: '', used: 0 }, chats: { plan: [], code: [] },
+}
+
+// 새로 생긴 항목이 없는 예전 기록도 열리도록 기본값을 채운다
+function withDefaults(g) {
+  const out = { ...START, ...g }
+  if (!g.concernParts && g.concern) out.concernParts = ['', g.concern, '', ''] // 예전에 한 칸으로 쓴 고민을 두 번째 칸으로
+  return out
 }
 
 // 서버의 하루 한도(한국 시간 자정 기준)와 같은 날짜 기준을 쓴다
@@ -49,13 +59,14 @@ export function useGame() {
   }, [state])
 
   const team = state.teams[state.current]
-  const game = team ? team.game : START
+  const game = team ? withDefaults(team.game) : START
 
   // 현재 팀의 기록만 바꾼다
   const patch = p => setState(s => {
     const t = s.teams[s.current]
     if (!t) return s
-    const next = { ...t.game, ...(typeof p === 'function' ? p(t.game) : p) }
+    const cur = withDefaults(t.game)
+    const next = { ...cur, ...(typeof p === 'function' ? p(cur) : p) }
     return { ...s, teams: { ...s.teams, [s.current]: { ...t, game: next } } }
   })
   const setDeck = p => patch(g => ({ deck: { ...g.deck, ...p } }))

@@ -1,4 +1,4 @@
-// 고정 힌트. project_template.ipynb의 미션 0~4·해석 쓰기와 같은 용어·변수명(df, df_use, result)·따옴표 스타일을 쓴다.
+﻿// 고정 힌트. project_template.ipynb의 미션 0~4·해석 쓰기와 같은 용어·변수명(df, df_use, result)·따옴표 스타일을 쓴다.
 // 단계: 1 생각할 질문 → 2 필요한 도구 → 3 빈칸 뼈대. 정답 코드는 어디에도 없다.
 export const TOPICS = [
   {
@@ -16,7 +16,7 @@ export const TOPICS = [
   {
     id: 'groupby', name: '미션 3 · 그룹별 분석',
     asks: ['무엇을 기준으로 묶고, 어떤 열의 무엇(평균 등)을 구하고 싶나요?', '묶는 기준에 그룹이 몇 개이고 각 그룹에 몇 명씩 있나요?', '계산할 열은 숫자(int·float)인가요?'],
-    tools: ['df_use["열"].value_counts() : 그룹이 몇 개, 각각 몇 명인지', 'df_use.dtypes : 계산할 열이 숫자인지', 'df_use.groupby("묶는 기준")["계산할 열"].mean() : 묶는 기준 → 계산할 열 → 통계'],
+    tools: ['df_use["열"].value_counts() : 그룹이 몇 개, 각각 몇 명인지', 'df_use.dtypes : 계산할 열이 숫자인지', 'df_use.groupby("묶는 기준")["계산할 열"].mean() : 묶는 기준 → 계산할 열 → 통계. mean · median · max · min · count 중에서 골라요', 'df_use["열"].value_counts() : 숫자 열 없이 그룹마다 개수(빈도)만 셀 때'],
     skeleton: 'print(df_use["___"].value_counts())   # 그룹 수와 인원\nresult = df_use.groupby("___")["___"].___()\ndisplay(result)',
   },
   {
@@ -28,7 +28,7 @@ export const TOPICS = [
   {
     id: 'plot', name: '미션 4 · 그래프',
     asks: ['보여 주고 싶은 것은 그룹 비교(막대)인가요, 변화(선)인가요?', '막대가 너무 많아 읽기 어렵지는 않나요?', '제목과 축 이름만 봐도 무엇을 비교한 그래프인지 알 수 있나요?'],
-    tools: ['result.plot(kind="bar") : 막대 / kind="line" : 선', 'plt.title / plt.xlabel / plt.ylabel : 이름 붙이기. Colab에서는 한글이 깨질 수 있어 영어로 써요', 'result.head(10) : 앞 10개만 그리기', 'plt.show() : 그래프 보이기'],
+    tools: ['result.plot(kind="bar") : 막대 / kind="line" : 선 / kind="hist" : 히스토그램 / kind="pie" : 원', 'plt.title / plt.xlabel / plt.ylabel : 이름 붙이기. Colab에서는 한글이 깨질 수 있어 영어로 써요', 'result.head(10) : 앞 10개만 그리기', 'plt.show() : 그래프 보이기'],
     skeleton: 'result.plot(kind="___")\nplt.title("___")     # 영어로. 예: Mean score by study time\nplt.xlabel("___")    # 묶는 기준\nplt.ylabel("___")    # 계산한 값\nplt.show()',
   },
   {

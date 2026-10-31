@@ -43,7 +43,9 @@ export function Text({ label, hint, value, onChange, rows, placeholder, max, fra
           {rows
             ? <textarea id={id} rows={rows} value={value} maxLength={max} placeholder={placeholder} onChange={e => onChange(e.target.value)} />
             : <input id={id} value={value} maxLength={max} placeholder={placeholder} onChange={e => onChange(e.target.value)} />}
-          {frame && <FrameHelper parts={frame} onUse={onChange} />}
+          {frame && (Array.isArray(frame[0]) ? frame : [frame]).map((parts, i) => (
+            <FrameHelper key={i} parts={parts} onUse={t => onChange(value.trim() ? `${value.trim()}\n${t}` : t)} />
+          ))}
         </>
       )}
     </Field>

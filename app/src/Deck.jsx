@@ -1,6 +1,6 @@
 ﻿import { useRef, useState } from 'react'
 import { getDs, LIMITS } from './data/meta.js'
-import { statOf, missingOf, nameOf } from './doc.js'
+import { statFor, missingOf, nameOf, measureName, concernMain, isFreq } from './doc.js'
 import { Text } from './ui.jsx'
 
 // 그래프 이미지를 줄여서 저장한다 (브라우저 저장 용량 보호)
@@ -29,7 +29,7 @@ const Title = ({ kw, rest }) => <h3 className="s-title">[ <span>{kw}</span> ]{re
 /* ---------- 슬라이드 7장 (기획안 5번 시간표와 같다) ---------- */
 function slides({ g, d, ds }) {
   const members = g.members.map(nameOf)
-  const s = statOf(g.stat)
+  const s = statFor(g)
   return [
     {
       time: '0:00~0:15', label: '제목',
@@ -48,7 +48,7 @@ function slides({ g, d, ds }) {
         <>
           <Title kw="진로" rest="와 궁금했던 점" />
           <p>우리는 <V v={g.keyword} /> 진로를 생각하고 있어요.</p>
-          <p>이 진로에서는 <V v={d.know} ph="알아야 할 것" />을(를) 알아야 해서, <V v={d.wonder || g.concern} ph="궁금한 것" />이(가) 궁금했습니다.</p>
+          <p>이 진로에서는 <V v={d.know} ph="알아야 할 것" />을(를) 알아야 해서, <V v={d.wonder || concernMain(g)} ph="궁금한 것" />이(가) 궁금했습니다.</p>
           <ul className="s-list">{g.members.map((m, i) => <li key={i}>{nameOf(m, i)}: <V v={m.career} /></li>)}</ul>
         </>
       ),
@@ -62,7 +62,7 @@ function slides({ g, d, ds }) {
           <p className="s-q small"><V v={g.question} ph="탐구 질문" /></p>
           <p>데이터: <V v={ds && `${ds.id}.csv`} /> | 한 행 = <V v={g.rowMeaning} /> | <V v={ds && ds.rows.toLocaleString()} />행 × <V v={ds && ds.columns.length} />열</p>
           <ul className="s-list">{g.usedCols.map(c => <li key={c.name}><code>{c.name}</code> {c.meaning}</li>)}</ul>
-          <p>숫자 요약: <code>{g.measure || '(열)'}</code> 값 <V v={d.cnt} />개, 평균 <V v={d.mean} /> · 중앙값 <V v={d.median} /> → <V v={d.pick} ph="평균/중앙값" />으로 요약</p>
+          <p>숫자 요약: <code>{measureName(g) || '(열)'}</code> 값 <V v={d.cnt} />개, 평균 <V v={d.mean} /> · 중앙값 <V v={d.median} /> → <V v={d.pick} ph="평균/중앙값" />으로 요약</p>
         </>
       ),
       fields: ['cnt', 'mean', 'median', 'pick'],
@@ -89,9 +89,9 @@ function slides({ g, d, ds }) {
       view: (
         <>
           <Title kw="해석" rest="과 한계" />
-          <p>① <V v={g.groupBy} />별 <V v={g.measure} />의 {s.topic} <V v={d.hi} />이(가) 가장 높고(<V v={d.hiVal} />), <V v={d.lo} />이(가) 가장 낮았다(<V v={d.loVal} />).</p>
+          <p>① <V v={g.groupBy} />별 {isFreq(g) ? <>개수(빈도)는</> : <><V v={g.measure} />의 {s.topic}</>} <V v={d.hi} />이(가) 가장 높고(<V v={d.hiVal} />), <V v={d.lo} />이(가) 가장 낮았다(<V v={d.loVal} />).</p>
           <p>② 두 집단의 차이는 <V v={d.diffPts && `${d.diffPts}점`} />이다.</p>
-          <p>③ 이는 <V v={d.m1 || g.groupBy} />와(과) <V v={d.m2 || g.measure} />가 함께 움직이는 경향을 보여 준다.</p>
+          <p>③ 이는 <V v={d.m1 || g.groupBy} />와(과) <V v={d.m2 || measureName(g)} />가 함께 움직이는 경향을 보여 준다.</p>
           <p>한계: 다만 <V v={d.limit} ph="이유" /> 때문에 이 결과를 모든 대상에게 일반화하기 어렵다.</p>
           <p className="small">빈칸 처리 비교: 원본 <V v={d.orig} /> / 제거 <V v={d.rem} />(<V v={d.remRows} />행) / 대체 <V v={d.rep} /> → <V v={missingOf(g.missingMethod)?.ko} />, 이유: <V v={g.missingWhy} /></p>
         </>
