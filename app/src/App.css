@@ -308,20 +308,36 @@ details summary { cursor: pointer; }
 .tablewrap { max-width: 100%; }
 .detail details { min-width: 0; }
 
-/* ---------- 화면 아래 플로팅 코치 바 ---------- */
-.has-dock { padding-bottom: calc(var(--dock-h, 110px) + 28px); }
-.dock { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); width: min(920px, calc(100vw - 24px)); z-index: 20;
-  background: var(--card); border: 1.5px solid var(--blue); border-radius: 16px; padding: 10px 14px 8px; display: grid; gap: 6px;
-  box-shadow: 0 8px 30px rgba(20, 30, 70, .22); }
-.dock-head { display: flex; align-items: baseline; gap: 10px; }
-.dock-body { display: grid; gap: 6px; }
-.dock .cando { margin: 0; }
-.dock .cando .note { color: var(--muted); padding: 3px 0; }
-.dock .log { max-height: min(38vh, 320px); margin: 0; }
-.dock .chips { margin: 0; }
-.dock-input { display: flex; gap: 8px; align-items: flex-end; }
-.dock-input textarea { resize: none; min-height: 0; line-height: 1.5; flex: 1; padding: 8px 12px; }
-.dock-input .primary { height: 40px; }
-.dock-hint { text-align: right; }
-@media (max-width: 520px) { .dock { bottom: 0; width: 100vw; border-radius: 16px 16px 0 0; border-width: 1.5px 0 0; } .dock-hint { display: none; } .has-dock { padding-bottom: calc(var(--dock-h, 110px) + 16px); } }
-@media print { .dock { display: none; } }
+/* ---------- 오른쪽 아래 채팅 상담 버튼과 창 ---------- */
+.cw { position: fixed; right: 18px; bottom: 18px; z-index: 30; display: grid; gap: 12px; justify-items: end; }
+.cw-fab { position: relative; width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--blue); color: #fff; display: grid; place-items: center; box-shadow: 0 6px 20px rgba(20, 30, 70, .3); }
+.cw-fab:hover { transform: translateY(-1px); }
+.cw-badge { position: absolute; top: -5px; right: -5px; min-width: 24px; height: 24px; padding: 0 5px; border-radius: 99px; background: #f5b301; color: #3a2a00; font-size: .78rem; font-weight: 800; display: grid; place-items: center; border: 2px solid var(--bg); }
+.cw-badge.low { background: var(--warn); color: #fff; }
+.cw-panel { width: min(380px, calc(100vw - 36px)); max-height: min(74vh, 600px); display: flex; flex-direction: column; gap: 8px; background: var(--card); border: 1.5px solid var(--line); border-radius: 18px; padding: 12px 14px; box-shadow: 0 14px 40px rgba(20, 30, 70, .28); overflow: hidden; }
+.cw-head { display: flex; align-items: center; gap: 8px; }
+.cw-x { background: none; border: 0; font-size: 1.5rem; line-height: 1; color: var(--muted); padding: 0 4px; }
+.cw-coins { background: #fff8e6; color: #5c4400; border-radius: 12px; padding: 8px 12px; display: grid; gap: 4px; }
+@media (prefers-color-scheme: dark) { .cw-coins { background: #3a3220; color: #f3dca0; } }
+.cw-coins.low { background: color-mix(in srgb, var(--warn) 14%, var(--card)); color: var(--warn); }
+.cw-coins p { margin: 0; font-size: .85rem; }
+.cw-coinrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.coins { position: relative; display: flex; gap: 4px; }
+.coins i { width: 15px; height: 15px; border-radius: 50%; background: #f5b301; border: 2px solid #d99a00; display: inline-block; }
+.coins i.empty { background: transparent; border-color: color-mix(in srgb, currentColor 40%, transparent); }
+.coins i.spent { animation: coin-spend .9s ease-out; }
+.minus { position: absolute; right: -4px; top: -18px; color: var(--warn); font-size: .9rem; animation: coin-minus 1s ease-out forwards; }
+@keyframes coin-spend { 0% { transform: scale(1.7); background: #f5b301; border-color: #d99a00; } 55% { transform: translateY(-9px) scale(1.25); opacity: .55; } 100% { transform: none; opacity: 1; } }
+@keyframes coin-minus { 0% { opacity: 0; transform: translateY(6px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-10px); } }
+@media (prefers-reduced-motion: reduce) { .coins i.spent, .minus { animation: none; } }
+.cw-note { font-weight: 700; }
+.cw-log { flex: 1; min-height: 120px; max-height: none; overflow-y: auto; margin: 0; }
+.cw-sys { margin: 0; font-size: .8rem; color: var(--muted); }
+.cw-chips { margin: 0; }
+.cw-err { margin: 0; }
+.cw-input { display: flex; gap: 8px; align-items: flex-end; }
+.cw-input textarea { resize: none; min-height: 0; flex: 1; padding: 8px 12px; line-height: 1.5; }
+.cw-input .primary { height: 40px; }
+.cw-foot { text-align: center; }
+@media (max-width: 520px) { .cw { right: 10px; bottom: 10px; } .cw-panel { width: calc(100vw - 20px); max-height: 76vh; } }
+@media print { .cw { display: none; } }

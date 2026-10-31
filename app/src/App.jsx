@@ -27,7 +27,7 @@ export default function App() {
   const done = PLAN_STEPS.filter(s => stepDone(s.id, game)).length
   const dock = tab === 'plan' || tab === 'code' // 발표 탭에서는 코치 바를 숨긴다
   return (
-    <div className={`app ${dock ? 'has-dock' : ''}`}>
+    <div className="app">
       <header className="top">
         <strong className="logo">{SITE_NAME}</strong>
         <span className="chip">{game.team}</span>
