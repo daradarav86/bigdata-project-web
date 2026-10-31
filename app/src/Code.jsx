@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react'
 import { TOPICS, ERRORS, SYMPTOMS, TERMS } from './data/hints.js'
 import { TabIntro } from './Guide.jsx'
+import CodeLab from './CodeLab.jsx'
 
 function Ladder({ topic }) {
   const [level, setLevel] = useState(1)
@@ -71,12 +72,16 @@ function Glossary() {
   )
 }
 
-export default function Code() {
+export default function Code({ game, patch, setDeck, py, out, setOut }) {
   const [id, setId] = useState(TOPICS[0].id)
   const topic = TOPICS.find(t => t.id === id)
   return (
     <div className="stack">
-        <TabIntro>코드는 노트북(Colab)에서 실행해요. 막히는 곳이 있으면 ① 막힌 부분을 고르고 → ② 힌트를 1단계부터 읽고 → ③ 오류 메시지는 해독기에 붙여 넣고 → ④ 그래도 안 되면 화면 아래 코치에게 물어요.</TabIntro>
+      <TabIntro>이 사이트에서 파이썬 코드를 직접 쓰고 실행해요. 칸을 위에서부터 차례로 실행하고, 막히면 ① 아래 "막힐 때" 도움말 → ② 오류 메시지 해독 → ③ 오른쪽 아래 코치 순서로 도움을 받아요.</TabIntro>
+      <CodeLab game={game} patch={patch} setDeck={setDeck} py={py} out={out} setOut={setOut} />
+      <details className="helpfold">
+        <summary>막힐 때 보는 도움말 (힌트 · 오류 해독기 · 용어 풀이)</summary>
+        <div className="stack">
         <section className="panel">
           <h3>어떤 부분에서 막혔나요?</h3>
           <div className="chips">
@@ -86,6 +91,8 @@ export default function Code() {
         </section>
         <ErrorDecoder />
         <Glossary />
+        </div>
+      </details>
     </div>
   )
 }

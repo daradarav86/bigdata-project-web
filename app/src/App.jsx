@@ -5,6 +5,8 @@ import Plan from './Plan.jsx'
 import Code from './Code.jsx'
 import Deck from './Deck.jsx'
 import CoachDock from './CoachDock.jsx'
+import { usePython } from './py/usePython.js'
+import ErrorBoundary from './ErrorBoundary.jsx'
 import { HowTo } from './Guide.jsx'
 import { SITE_NAME } from './data/meta.js'
 import { PLAN_STEPS, stepDone } from './doc.js'
@@ -12,7 +14,7 @@ import './App.css'
 
 const TABS = [
   ['plan', '기획', '기획안 0~3번'],
-  ['code', '코드', '막힐 때 도움'],
+  ['code', '코드', '파이썬 실행'],
   ['deck', '발표', '3분 발표 7장'],
 ]
 
@@ -21,6 +23,8 @@ export default function App() {
   const { game } = g
   const [tab, setTab] = useState('plan')
   const [showHelp, setShowHelp] = useState(false)
+  const py = usePython() // 탭을 옮겨도 파이썬 변수가 유지되도록 여기서 한 번만 만든다
+  const [out, setOut] = useState({}) // 코드 칸별 실행 결과
 
   if (!g.current) return <Gate createTeam={g.createTeam} joinTeam={g.joinTeam} teamNames={g.teamNames} />
 
@@ -49,9 +53,11 @@ export default function App() {
         ))}
       </nav>
       <main>
-        {tab === 'plan' && <Plan {...g} game={game} go={setTab} />}
-        {tab === 'code' && <Code {...g} game={game} />}
-        {tab === 'deck' && <Deck {...g} game={game} go={setTab} />}
+        <ErrorBoundary key={tab}>
+          {tab === 'plan' && <Plan {...g} game={game} go={setTab} />}
+          {tab === 'code' && <Code {...g} game={game} py={py} out={out} setOut={setOut} />}
+          {tab === 'deck' && <Deck {...g} game={game} go={setTab} />}
+        </ErrorBoundary>
       </main>
       {dock && <CoachDock mode={tab} game={game} aiLeft={g.aiLeft} consumeAi={g.consumeAi} setChat={g.setChat} />}
     </div>
