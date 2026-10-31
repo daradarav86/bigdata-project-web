@@ -30,7 +30,7 @@ export function reviewQuestion(text, picks) {
   const pass = checks.every(c => c.ok)
   return {
     checks, pass, score: checks.filter(c => c.ok).length,
-    asks: pass ? ['모든 점검을 통과했어요. 이 질문의 답이 예상과 다르게 나온다면 어떤 이유가 있을 것 같나요?'] : asks,
+    asks: pass ? ['4가지 기준을 모두 지켰어요. 이 질문의 답이 예상과 다르게 나온다면 어떤 이유가 있을 것 같나요?'] : asks,
   }
 }
 
@@ -50,7 +50,7 @@ export function mockReply({ mode, message, context }) {
     const miss = checkQuestion(message, context).filter(c => !c.ok).map(c => c.label)
     const asks = miss.length
       ? ['쓴 내용에서 아직 비어 있는 부분이 있어요: ' + miss.join(' / '), '그 부분을 채우려면 열 목록에서 어떤 열을 보면 될까요?']
-      : ['점검표는 모두 통과했어요. 이 질문의 답이 예상과 다르게 나온다면 어떤 이유가 있을 것 같나요?', '이 결과를 우리 진로의 어떤 장면에서 쓸 수 있을까요?']
+      : ['4가지 기준을 모두 지켰어요. 이 질문의 답이 예상과 다르게 나온다면 어떤 이유가 있을 것 같나요?', '이 결과를 우리 진로의 어떤 장면에서 쓸 수 있을까요?']
     return asks.join('\n\n') + demo
   }
   const id = Object.keys(KEYWORDS).find(k => KEYWORDS[k].test(message)) || 'explore'

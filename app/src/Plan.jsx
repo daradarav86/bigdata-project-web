@@ -32,31 +32,44 @@ function ColTable({ ds }) {
 }
 
 /* ---------- 열 고르기 ---------- */
-function ColPicker({ label, hint, ds, value, onPick, kinds, warn }) {
+// 선생님 추천 짝에 나온 열 이름을 실제 열로 바꾼다. 설명("마지막 열(압축강도)")이면 마지막 열로 본다.
+function recNames(ds, which) {
+  const text = ds.pair?.[which] ?? ''
+  const real = text.split(',').map(s => s.trim()).filter(n => ds.columns.some(c => c.name === n))
+  if (real.length) return real
+  return /마지막 열/.test(text) && ds.columns.length ? [ds.columns[ds.columns.length - 1].name] : []
+}
+
+// pred: 이 칸에 어울리는 열인지. rec: 선생님 추천 열(종류와 상관없이 항상 맨 위에 "추천"으로 보인다).
+function ColPicker({ label, hint, ds, value, onPick, pred, rec = [], warn }) {
   const [all, setAll] = useState(false)
-  const list = ds.columns.filter(c => all || kinds.includes(c.kind))
+  const base = ds.columns.filter(c => pred(c) || rec.includes(c.name))
+  const none = base.length === 0 // 어울리는 열이 하나도 없는 데이터는 처음부터 모든 열을 보여 준다
+  const list = (all || none ? ds.columns : base).slice().sort((a, b) => Number(rec.includes(b.name)) - Number(rec.includes(a.name)))
   const cur = getCol(ds, value)
   const w = cur && warn(cur)
   return (
     <div className="field">
       <span className="lbl">{label}</span>
       <p className="hint">{hint}</p>
+      {none && <p className="warn small" role="status">이 데이터에는 이 칸에 어울리는 종류의 열이 없어서 모든 열을 보여 줘요. 값이 몇 종류 안 되는 열을 골라요.</p>}
       <div className="colgrid" role="radiogroup" aria-label={label}>
         {list.map(c => (
           <button key={c.name} role="radio" aria-checked={value === c.name} className={`col ${value === c.name ? 'on' : ''}`} onClick={() => onPick(c.name)}>
-            <code>{c.name}</code>
+            <code>{c.name}{rec.includes(c.name) && <span className="recmark">추천</span>}</code>
             <span>{c.meaning}</span>
             <small>{KIND_LABEL[c.kind]}{c.kind === 'group' ? ` · ${c.unique}개 값` : ''}{c.missing ? ` · 결측값 ${c.missing}` : ''}</small>
           </button>
         ))}
-        {list.length === 0 && <p className="muted">알맞은 열이 없어요. 아래 "모든 열 보기"를 눌러 보세요.</p>}
       </div>
-      <div className="row start">
-        <button type="button" className={`ghost ${all ? 'on' : ''}`} aria-pressed={all} onClick={() => setAll(v => !v)}>
-          {all ? `추천 열만 보기 (${ds.columns.filter(c => kinds.includes(c.kind)).length}개)` : `모든 열 보기 (${ds.columns.length}개)`}
-        </button>
-        <small className="muted">{all ? '모든 종류의 열이 보여요. 종류를 꼭 확인해요.' : '이 칸에 어울리는 종류의 열만 보여요.'}</small>
-      </div>
+      {!none && (
+        <div className="row start">
+          <button type="button" className={`ghost ${all ? 'on' : ''}`} aria-pressed={all} onClick={() => setAll(v => !v)}>
+            {all ? `추천 열만 보기 (${base.length}개)` : `모든 열 보기 (${ds.columns.length}개)`}
+          </button>
+          <small className="muted">{all ? '모든 종류의 열이 보여요. 종류를 꼭 확인해요.' : '이 칸에 어울리는 종류의 열만 보여요.'}</small>
+        </div>
+      )}
       {w && <p className="warn small" role="status">{w}</p>}
     </div>
   )
@@ -325,7 +338,7 @@ function QuestionStep({ game, patch, go }) {
       <Seg label="질문 틀" hint="STEP 4. 어떤 모양의 질문을 만들까요?" value={game.frame} onChange={setFrame}
         options={FRAMES.map(f => ({ id: f.id, ko: `${f.id}. ${f.name}`, desc: f.text }))} />
       {rec && <p className="hint">선생님 추천 짝: 묶는 기준 <code>{rec.groupBy}</code> → 계산할 열 <code>{rec.measure}</code> {rec.newCol && <>· 새 열 아이디어: {rec.newCol}</>}</p>}
-      <ColPicker label="① 묶는 기준 (groupby의 열)" ds={ds} value={game.groupBy} kinds={['group']} onPick={v => patch({ groupBy: v })}
+      <ColPicker label="① 묶는 기준 (groupby의 열)" ds={ds} value={game.groupBy} pred={c => c.kind === 'group'} rec={recNames(ds, 'groupBy')} onPick={v => patch({ groupBy: v })}
         hint="글자·구간이 들어 있는 열. 그룹이 2~7개면 읽기 좋아요."
         warn={c => (c.unique > 7 ? `값이 ${c.unique}개나 돼요. 그래프가 복잡해질 수 있어요. (그룹이 많으면 result.head(10))` : c.kind === 'number' ? '숫자 열이라 그룹이 너무 많을 수 있어요.' : '')} />
       <Seg label="② 무엇을 계산할까요?" hint="숫자 열의 값을 통계로 요약할 수도 있고, 숫자 열 없이 그룹마다 몇 개(몇 명)인지 빈도만 셀 수도 있어요."
@@ -333,9 +346,9 @@ function QuestionStep({ game, patch, go }) {
         options={[{ id: 'column', ko: '숫자 열의 통계', desc: '평균·중앙값·최댓값·최솟값·개수 중에서 골라요' }, { id: 'freq', ko: '빈도(몇 개·몇 명)', desc: '숫자 열 없이 그룹마다 개수를 세요' }]} />
       {!isFreq(game) && (
         <>
-          <ColPicker label="계산할 열" ds={ds} value={game.measure} kinds={['number']} onPick={v => patch({ measure: v })}
+          <ColPicker label="계산할 열" ds={ds} value={game.measure} pred={c => c.kind === 'number'} rec={recNames(ds, 'measure')} onPick={v => patch({ measure: v })}
             hint="숫자 열(점수, 길이, 금액 …)만 가능해요."
-            warn={c => (c.kind !== 'number' ? '숫자 열이 아니면 통계를 낼 수 없어요. info()의 Dtype을 확인해요.' : c.missing / ds.rows > 0.05 ? `결측값(NaN)이 ${c.missing}개(${pct(c.missing, ds.rows)}%)로 많은 편이에요. 결측값(NaN) 처리를 꼭 생각해요.` : '')} />
+            warn={c => (!c.numeric ? '숫자 열이 아니면 통계를 낼 수 없어요. info()의 Dtype을 확인해요.' : c.missing / ds.rows > 0.05 ? `결측값(NaN)이 ${c.missing}개(${pct(c.missing, ds.rows)}%)로 많은 편이에요. 결측값(NaN) 처리를 꼭 생각해요.` : '')} />
           <Seg label="③ 통계 (수업에서 배운 것)" value={game.stat} onChange={v => patch({ stat: v })}
             options={[...STATS.map(s => ({ id: s.id, ko: s.ko, desc: s.desc })), { id: 'etc', ko: '기타', desc: '위에 없는 통계를 더 비교하고 싶으면 직접 써요' }]} />
           {game.stat === 'etc' && (

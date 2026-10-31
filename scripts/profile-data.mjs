@@ -80,7 +80,8 @@ for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.csv') && !skip.h
     const unique = new Set(filled).size
     // number: 값이 많은 숫자 / group: 묶을 수 있는 열 / text: 값이 너무 많은 글자(이름·설명 등)
     const kind = numeric ? (unique > 12 ? 'number' : 'group') : (unique <= 30 ? 'group' : 'text')
-    return { name, kind, missing: vals.length - filled.length, unique, examples: [...new Set(filled)].slice(0, 4), meaning: meanings[name.trim()] ?? '' }
+    // numeric: 값이 모두 숫자인지. 1~5점 평점처럼 값이 몇 개 안 되는 숫자 열은 kind가 "group"이지만 평균 등을 낼 수 있다.
+    return { name, kind, numeric, missing: vals.length - filled.length, unique, examples: [...new Set(filled)].slice(0, 4), meaning: meanings[name.trim()] ?? '' }
   })
   result.push({
     id, rows: body.length, columns,

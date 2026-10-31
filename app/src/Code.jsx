@@ -2,6 +2,7 @@
 import { TOPICS, ERRORS, SYMPTOMS, TERMS } from './data/hints.js'
 import { TabIntro } from './Guide.jsx'
 import { buildCodeMemo } from './doc.js'
+import { NOTEBOOK_URL } from './data/meta.js'
 
 function Ladder({ topic }) {
   const [level, setLevel] = useState(1)
@@ -48,7 +49,7 @@ function ErrorDecoder() {
     <section className="panel">
       <h3>오류 해독기</h3>
       <textarea rows={3} value={msg} aria-label="오류 메시지" placeholder="빨간 오류 메시지의 마지막 줄을 붙여 넣어요 (예: KeyError: 'age')" onChange={e => setMsg(e.target.value)} />
-      {msg.trim() && !hit && <p className="muted small">아직 모르는 오류예요. 화면 아래 코치에게 물어보세요.</p>}
+      {msg.trim() && !hit && <p className="muted small">아직 모르는 오류예요. 오른쪽 아래 코치에게 물어보세요.</p>}
       {hit && (
         <div className="decode">
           <b>{hit.name}</b> — {hit.meaning}
@@ -95,6 +96,11 @@ export default function Code({ game }) {
   return (
     <div className="stack">
       <TabIntro>코드는 Colab 노트북에서 실행해요. 이 탭에서는 우리 팀의 설계를 노트북으로 가져가고, 막히면 ① 막힌 부분을 고르고 → ② 힌트를 1단계부터 읽고 → ③ 오류 메시지는 해독기에 붙여 넣고 → ④ 그래도 안 되면 오른쪽 아래 코치에게 물어요.</TabIntro>
+      <section className="panel">
+        <h3>Colab 노트북 열기</h3>
+        <p className="hint">수업에서 계속 써 온 프로젝트 노트북이 있으면 그걸 열어요. 새로 시작해야 하면 아래 템플릿을 열고 <b>"Drive에 사본 저장"</b>을 눌러 우리 팀 노트북을 만들어요.</p>
+        <a className="primary linkbtn" href={NOTEBOOK_URL} target="_blank" rel="noopener noreferrer">프로젝트 노트북 템플릿 열기 (새 창)</a>
+      </section>
       <DesignMemo game={game} />
       <section className="panel">
         <h3>어떤 부분에서 막혔나요?</h3>

@@ -42,20 +42,27 @@ async function hashPass(salt, pass) {
 
 // 프로토타입: 이 기기의 브라우저에만 저장한다. 비밀번호도 이 기기 안에서만 확인된다.
 // 서버(Supabase)를 연결하면 팀·비밀번호·기록이 서버로 옮겨 가서 다른 기기에서도 들어올 수 있다.
-function load() {
-  try {
-    const s = JSON.parse(localStorage.getItem(KEY) || '{}')
-    return { current: s.current ?? '', teams: s.teams ?? {} }
-  } catch { return { current: '', teams: {} } }
-}
+// 팀 기록은 브라우저(localStorage)에 모아 두고, "지금 이 탭에서 들어가 있는 팀"은 탭마다 따로(sessionStorage) 기억한다.
+// → 공용 컴퓨터에서 탭을 닫으면 로그아웃되고, 탭 두 개로 서로 다른 팀을 써도 섞이지 않는다.
+const CUR_KEY = 'data-detective-current'
+const readTeams = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}').teams ?? {} } catch { return {} } }
+const readCurrent = () => { try { return sessionStorage.getItem(CUR_KEY) ?? '' } catch { return '' } }
+const load = () => ({ current: readCurrent(), teams: readTeams() })
 
 export function useGame() {
   const [state, setState] = useState(load)
   const ref = useRef(state)
   useEffect(() => { ref.current = state })
   useEffect(() => {
-    try { localStorage.setItem(KEY, JSON.stringify(state)) } catch { /* 저장 불가 환경(용량 초과 포함) */ }
+    try { localStorage.setItem(KEY, JSON.stringify({ teams: state.teams })) } catch { /* 저장 불가 환경(용량 초과 포함) */ }
+    try { sessionStorage.setItem(CUR_KEY, state.current) } catch { /* 저장 불가 환경 */ }
   }, [state])
+  // 다른 탭에서 팀 기록이 바뀌면 이 탭도 따라간다 (서로 덮어써서 기록이 사라지는 일을 줄인다)
+  useEffect(() => {
+    const onStorage = e => { if (e.key === KEY) setState(s => ({ ...s, teams: readTeams() })) }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   const team = state.teams[state.current]
   const game = team ? withDefaults(team.game) : START
@@ -108,5 +115,5 @@ export function useGame() {
     return { current: '', teams: rest }
   })
 
-  return { game, patch, setDeck, setSize, setMember, aiLeft, consumeAi, setChat, current: state.current, teamNames: Object.keys(state.teams), createTeam, joinTeam, logout, removeTeam }
+  return { game, patch, setDeck, setSize, setMember, aiLeft, consumeAi, setChat, current: team ? state.current : '', teamNames: Object.keys(state.teams), createTeam, joinTeam, logout, removeTeam }
 }

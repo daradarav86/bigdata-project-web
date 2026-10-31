@@ -60,7 +60,7 @@ export function usedColsOf(g) {
 export function axisOptions(g, ds) {
   const cols = ds ? ds.columns : []
   const groups = cols.filter(c => c.kind === 'group').map(c => c.name)
-  const nums = cols.filter(c => c.kind === 'number').map(c => c.name)
+  const nums = cols.filter(c => c.numeric).map(c => c.name) // 값이 모두 숫자인 열 (평점 1~5처럼 값이 적은 열도 포함)
   const yValue = isFreq(g) ? '그룹별 개수(빈도)' : g.measure ? `${g.measure}의 ${statFor(g).ko}` : ''
   if (g.chart === 'hist') {
     const x = nums.includes(g.measure) ? g.measure : nums[0] ?? ''

@@ -2,6 +2,9 @@
 
 export const SITE_NAME = '원묵고 빅데이터원리탐구 도우미'
 
+// Colab에서 여는 프로젝트 노트북 템플릿 (수업에서 쓰는 노트북 주소가 따로 있으면 이 값만 바꾸면 된다)
+export const NOTEBOOK_URL = 'https://colab.research.google.com/github/daradarav86/bigdata/blob/main/notebooks/project_template.ipynb'
+
 export const getDs = id => datasets.find(d => d.id === id)
 export const getCol = (ds, name) => ds?.columns.find(c => c.name === name)
 

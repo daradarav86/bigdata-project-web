@@ -61,12 +61,14 @@ function missingQ(ds) {
   }
 }
 
-function numColQ(ds) {
+// 글자(문자)가 들어 있는 열 찾기: 정답은 값이 글자인 열 1개, 틀린 보기는 값이 모두 숫자인 열 2개.
+// ("숫자 열"을 묻지 않는 이유: 월·평점처럼 숫자로 된 묶는 열이 있어서 정답이 둘로 갈릴 수 있다)
+function textColQ(ds) {
   return r => {
-    const nums = ds.columns.filter(c => c.kind === 'number'), others = ds.columns.filter(c => c.kind !== 'number')
-    if (!nums.length || others.length < 2) return null
-    const ans = pick(nums, r).name
-    return { id: 'numcol', text: '다음 중 평균을 구할 수 있는 "숫자" 열은 무엇인가요?', options: shuffle([ans, ...shuffle(others, r).slice(0, 2).map(c => c.name)], r), answer: ans, where: '"열 목록" 표의 "종류" 칸이 "숫자"인 열이에요.' }
+    const texts = ds.columns.filter(c => !c.numeric && c.unique > 0), nums = ds.columns.filter(c => c.numeric)
+    if (!texts.length || nums.length < 2) return null
+    const ans = pick(texts, r).name
+    return { id: 'textcol', text: '다음 중 값이 숫자가 아니라 글자(문자)인 열은 무엇인가요?', options: shuffle([ans, ...shuffle(nums, r).slice(0, 2).map(c => c.name)], r), answer: ans, where: '"앞 5행" 표에서 숫자가 아닌 글자가 들어 있는 열을 찾아요.' }
   }
 }
 
@@ -76,7 +78,7 @@ export function makeDataQuiz(ds) {
   const seed = hash(ds.id), r = rng(seed)
   const sizeFirst = seed % 2 === 0
   const q1 = (sizeFirst ? rowsQ(ds) : colsQ(ds))(r) ?? (sizeFirst ? colsQ(ds) : rowsQ(ds))(r)
-  const makers = [firstQ(ds), missingQ(ds), numColQ(ds)]
+  const makers = [firstQ(ds), missingQ(ds), textColQ(ds)]
   const start = (seed >>> 3) % makers.length
   let q2 = null
   for (let k = 0; k < makers.length && !q2; k++) q2 = makers[(start + k) % makers.length](r)
