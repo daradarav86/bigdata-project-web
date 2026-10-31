@@ -163,14 +163,27 @@ export function useGame() {
     }
   }, [leave])
 
-  // 처음 열 때: 이 탭에 토큰이 있으면 그 팀 기록을 불러온다
+  // 처음 열 때: 이 탭에 토큰이 있으면 그 팀 기록을 불러온다.
+  // 인터넷이 잠깐 끊긴 것이면 로그아웃시키지 않고 몇 번 다시 해 본다 (토큰이 틀린 401만 바로 내보낸다).
   useEffect(() => {
     const token = readToken()
-    if (!token) return
-    backend.sync(token, null)
-      .then(r => enter(r, token))
-      .catch(e => leave(e.status === 401 ? e.message : '팀 기록을 불러오지 못했어요. 다시 들어가 주세요.'))
-      .finally(() => setLoading(false))
+    if (!token) return undefined
+    let stop = false
+    const load = async () => {
+      for (let i = 0; i < 4 && !stop; i++) {
+        try {
+          const r = await backend.sync(token, null)
+          if (!stop) enter(r, token)
+          return
+        } catch (e) {
+          if (e.status === 401) { leave(e.message); return }
+          await new Promise(res => setTimeout(res, 2000))
+        }
+      }
+      if (!stop) leave('팀 기록을 불러오지 못했어요. 인터넷 연결을 확인하고 다시 들어가 주세요.')
+    }
+    load().finally(() => { if (!stop) setLoading(false) })
+    return () => { stop = true }
   }, [enter, leave])
 
   // 들어가 있는 동안: 주기적으로, 그리고 화면으로 돌아올 때 받아 온다. 화면을 떠날 때는 남은 변경을 보낸다.
