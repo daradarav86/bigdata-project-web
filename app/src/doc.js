@@ -52,7 +52,34 @@ export function usedColsOf(g) {
   return [g.groupBy, isFreq(g) ? '' : g.measure].filter(Boolean).map(n => ({ name: n, meaning: getCol(ds, n)?.meaning ?? '' }))
 }
 
-// 진로 장면 ②(비교 집단)·③(확인할 숫자)은 따로 쓰지 않고, 열을 고른 것에서 만든다
+// 그래프 축 후보: 그래프 종류에 따라 가로축(x)·세로축(y)에 올 수 있는 것이 달라진다
+export function axisOptions(g, ds) {
+  const cols = ds ? ds.columns : []
+  const groups = cols.filter(c => c.kind === 'group').map(c => c.name)
+  const nums = cols.filter(c => c.kind === 'number').map(c => c.name)
+  const yValue = isFreq(g) ? '그룹별 개수(빈도)' : g.measure ? `${g.measure}의 ${statFor(g).ko}` : ''
+  if (g.chart === 'hist') {
+    const x = nums.includes(g.measure) ? g.measure : nums[0] ?? ''
+    return { x: nums, y: ['빈도 (그 구간에 속한 개수)'], xDefault: x, yDefault: '빈도 (그 구간에 속한 개수)', note: '히스토그램은 가로축에 값(구간), 세로축에 그 구간에 속한 개수가 와요. 숫자 열 하나의 분포를 봐요.' }
+  }
+  if (g.chart === 'scatter') {
+    const x = nums.includes(g.measure) ? g.measure : nums[0] ?? ''
+    return { x: nums, y: nums, xDefault: x, yDefault: nums.find(n => n !== x) ?? '', note: '산점도는 숫자 열 두 개의 관계를 봐요. 원인이라고 생각하는 쪽을 가로축(x)에, 결과라고 생각하는 쪽을 세로축(y)에 두는 게 보통이에요.' }
+  }
+  const x = [...new Set([g.groupBy, ...groups].filter(Boolean))]
+  const note = g.chart === 'line'
+    ? '선그래프는 가로축에 연도·월처럼 순서가 있는 것이, 세로축에 계산한 값이 와요.'
+    : '막대·원 같은 그래프는 가로축에 비교할 집단이, 세로축에 계산한 값이 와요.'
+  return { x, y: yValue ? [yValue] : [], xDefault: g.groupBy || '', yDefault: yValue, note }
+}
+
+// 지금 실제로 쓰는 가로축·세로축 (학생이 고른 것이 후보에 없으면 기본값)
+export function axisOf(g) {
+  const o = axisOptions(g, getDs(g.dataset))
+  return { x: o.x.includes(g.xAxis) ? g.xAxis : o.xDefault, y: o.y.includes(g.yAxis) ? g.yAxis : o.yDefault, pie: g.chart === 'pie' }
+}
+
+// 진로 장면 ②(비교 집단)·③(확인할 숫자)을 아직 안 썼을 때 열을 고른 것에서 만든 문장
 export function sceneAuto(g) {
   const s = statFor(g)
   return {
@@ -117,9 +144,9 @@ export function stepDone(id, g) {
     case 'team': return filled(g.team) && g.members.every(m => m.name.trim()) && g.pledge
     case 'career': return g.members.every(m => m.career.trim()) && filled(g.keyword, g.keywordWhy)
     case 'data': return !!g.dataset
-    case 'scene': return g.concernParts[0].trim().length >= 2
+    case 'scene': return g.concernParts[0].trim().length >= 2 && filled(g.groupsAsk, g.numberAsk)
     case 'question': return !!g.groupBy && hasMeasure(g) && reviewState(g).accepted && filled(g.scene, g.expect)
-    case 'understand': return filled(g.rowMeaning) // 사용할 열은 질문에서 고른 열로 자동
+    case 'understand': return filled(g.rowMeaning) && g.usedCols.length >= 3
     case 'method': return !!g.missingMethod && filled(g.missingWhy) // 3-3 코드 설계는 선택
     case 'summary': return filled(g.title)
     default: return false
@@ -131,6 +158,14 @@ export const MAX_CONCERNS = 4
 export const concernText = g => g.concernParts.map((p, i) => (p.trim() ? `(${i + 1}) ${p.trim()}` : '')).filter(Boolean).join('\n')
 // 발표 문장에 한 줄로 넣을 때는 첫 번째 고민을 쓴다
 export const concernMain = g => (g.concernParts.find(p => p.trim()) || '').trim()
+// 그래프 축을 한 줄로 (원그래프는 축이 없다). 영어 축 이름을 썼으면 함께 보여 준다.
+export function axisText(g) {
+  const a = axisOf(g)
+  if (a.pie) return ''
+  const labels = g.xLabel.trim() || g.yLabel.trim() ? ` · 축 이름(영어) x="${g.xLabel.trim()}", y="${g.yLabel.trim()}"` : ''
+  return ` (가로축 x: ${a.x || '?'} / 세로축 y: ${a.y || '?'}${labels})`
+}
+
 // 기획안 전체 텍스트 (복사용). 기획안 v2의 번호와 제목을 그대로 쓴다.
 export function buildPlanText(g) {
   const ds = getDs(g.dataset)
@@ -141,7 +176,7 @@ export function buildPlanText(g) {
   L.push('## 1. 진로에서 탐구 질문 만들기', '### STEP 1. 팀원 진로')
   g.members.forEach((m, i) => L.push(`- ${nameOf(m, i)}: ${m.career}${m.job.trim() ? ` (${m.job})` : ''}`))
   const auto = sceneAuto(g)
-  L.push('', '### STEP 3. 진로 장면에서 궁금한 점', `① 판단이 필요한 순간과 고민:\n${concernText(g)}`, `② 비교하고 싶은 집단: ${auto.groups}`, `③ 확인할 숫자: ${auto.number}`, '')
+  L.push('', '### STEP 3. 진로 장면에서 궁금한 점', `① 판단이 필요한 순간과 고민:\n${concernText(g)}`, `② 비교하고 싶은 집단: ${g.groupsAsk.trim() || auto.groups}`, `③ 확인할 숫자: ${g.numberAsk.trim() || auto.number}`, '')
   L.push(`### 1-1. 진로 키워드와 이유`, `${g.keyword} — ${g.keywordWhy}`, '')
   L.push(`### 1-2. 탐구 질문 (질문 틀 ${g.frame}: ${f.name})`, g.question, '')
   L.push('### 1-3. 이 질문이 진로에서 중요한 장면', g.scene, '')
@@ -150,7 +185,7 @@ export function buildPlanText(g) {
   L.push('## 2. 사용할 데이터', `파일: ${ds ? ds.id + '.csv' : ''}`, `한 행: ${g.rowMeaning}`, ds ? `행 × 열: ${ds.rows}행 × ${ds.columns.length}열` : '')
   L.push('사용할 열:'); usedColsOf(g).forEach(u => L.push(`- ${u.name}: ${u.meaning}`)); L.push('')
   L.push('## 3. 분석 계획', `우리 팀은 ${ds ? ds.id : '___'} 데이터에서 ${g.groupBy}(으)로 묶어 ${isFreq(g) ? '개수(빈도)를' : `${g.measure}의 ${s.obj}`} 비교하고, ${c.short}그래프로 나타냅니다.`)
-  L.push(`① 묶는 기준: ${g.groupBy}`, `② 계산할 것: ${isFreq(g) ? '빈도(그룹별 개수)' : g.measure}`, `③ 통계: ${isFreq(g) ? '개수(count / value_counts)' : s.fn}`, `④ 결측값(NaN) 처리: ${mm ? mm.ko : ''} — ${g.missingWhy}`, `⑤ 그래프: ${c.ko}`, `⑥ 새 열: ${g.newCol || '이번에는 만들지 않음'}`)
+  L.push(`① 묶는 기준: ${g.groupBy}`, `② 계산할 것: ${isFreq(g) ? '빈도(그룹별 개수)' : g.measure}`, `③ 통계: ${isFreq(g) ? '개수(count / value_counts)' : s.fn}`, `④ 결측값(NaN) 처리: ${mm ? mm.ko : ''} — ${g.missingWhy}`, `⑤ 그래프: ${c.ko}${axisText(g)}`, `⑥ 새 열: ${g.newCol || '이번에는 만들지 않음'}`)
   if (g.extraCompare.trim()) L.push(`⑧ 더 비교해 보고 싶은 것: ${g.extraCompare}`)
   if (g.codeDesign.trim()) L.push('코드 설계:', g.codeDesign)
   L.push('')
@@ -168,7 +203,7 @@ export function buildCodeMemo(g) {
     `# 묶는 기준: ${g.groupBy || '(아직 없음)'}`,
     `# 계산할 것: ${isFreq(g) ? '빈도(그룹별 개수) → value_counts()' : `${g.measure || '(아직 없음)'}의 ${s.ko} → ${s.fn}`}`,
     `# 결측값(NaN) 처리: ${mm ? mm.ko : '(아직 없음)'}${g.missingWhy ? ' — ' + g.missingWhy : ''}`,
-    `# 그래프: ${c.ko}`,
+    `# 그래프: ${c.ko}${axisText(g)}`,
   ]
   if (g.newCol.trim()) lines.push(`# 새 열: ${g.newCol}`)
   if (g.codeDesign.trim()) {

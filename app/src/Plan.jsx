@@ -1,7 +1,7 @@
 ﻿import { useMemo, useState } from 'react'
 import datasets from './data/datasets.json'
 import { FRAMES, STATS, CHARTS, MISSING, KIND_LABEL, getDs, getCol } from './data/meta.js'
-import { PLAN_STEPS, stepDone, draftQuestion, checkCodeDesign, buildPlanText, pct, statFor, chartFor, isFreq, hasMeasure, picksKey, frameOf, nameOf, missingOf, reviewState, MAX_REVIEWS, MAX_CONCERNS, concernText, usedColsOf } from './doc.js'
+import { PLAN_STEPS, stepDone, draftQuestion, checkCodeDesign, buildPlanText, pct, statFor, chartFor, isFreq, hasMeasure, picksKey, frameOf, nameOf, missingOf, reviewState, MAX_REVIEWS, MAX_CONCERNS, concernText, axisOptions, axisOf } from './doc.js'
 import { reviewQuestion } from './coach.js'
 import { Text, Seg, Think, Stuck } from './ui.jsx'
 import { exportPlanDocx } from './exportDoc.js'
@@ -168,6 +168,20 @@ function DataStep({ game, patch, go }) {
 // 진로 장면의 문장 틀 (고민 칸마다 쓸 수 있다)
 const CONCERN_FRAME = ['이 일을 하는 사람은 ', { key: 's', ph: '어떤 상황' }, '일 때 ', { key: 'c', ph: '고민' }, '을(를) 가장 자주 고민한다. 왜냐하면 ', { key: 'y', ph: '이유' }, ' 때문이다.']
 
+// 숫자 예시: 수업에서 배운 통계와 "빈도"
+function StatExamples() {
+  return (
+    <div className="statex">
+      <b>숫자 예시 — 우리가 배운 것</b>
+      <ul>
+        {STATS.map(s => <li key={s.id}><b>{s.ko}</b> <span>{s.desc}</span></li>)}
+        <li><b>빈도</b> <span>숫자 열 없이 그룹마다 몇 명·몇 개인지 세는 것 (예: 장르별 영화 수, 학년별 학생 수)</span></li>
+      </ul>
+    </div>
+  )
+}
+
+// 진로 장면: 직업의 고민(①) → 비교하고 싶은 집단(②) → 확인할 숫자(③). 이 세 줄이 다음 단계에서 열을 고르는 재료가 된다.
 function SceneStep({ game, patch }) {
   const parts = game.concernParts
   const setPart = (i, v) => patch(g => {
@@ -177,10 +191,11 @@ function SceneStep({ game, patch }) {
   const addPart = () => patch(g => (g.concernParts.length >= MAX_CONCERNS ? {} : { concernParts: [...g.concernParts, ''] }))
   return (
     <>
-      <p className="hint">STEP 3. 이 직업을 가진 사람의 고민을 떠올려요. 팀원이 돌아가며 말하고, <b>한 칸만 써도 충분해요.</b></p>
-      <section className="scenebox" aria-label="이 직업의 고민">
-        <h3>이 직업을 가진 사람이 가장 자주 고민하는 것은?</h3>
-        <p className="hint">예) 학생이 공부를 어떻게 하게 도울까? 고민이 더 떠오르면 아래 버튼으로 칸을 하나씩 늘려요.</p>
+      <p className="hint">STEP 3. 이 직업의 장면에서 데이터 질문의 재료를 찾아요. 팀원이 돌아가며 말하고, 칸마다 <b>한두 줄이면 충분해요.</b> 이 세 줄이 다음 단계에서 열을 고르는 기준이 돼요.</p>
+
+      <section className="scenebox" aria-label="① 가장 자주 고민하는 것">
+        <h3>① 이 직업을 가진 사람이 가장 자주 고민하는 것은?</h3>
+        <p className="hint">예) 학생이 공부를 어떻게 하게 도울까? 한 칸만 써도 되고, 고민이 더 떠오르면 칸을 하나씩 늘려요.</p>
         {parts.map((v, i) => (
           <Text key={i} label={`고민 ${i + 1}`} rows={3} value={v} onChange={t => setPart(i, t)} frame={CONCERN_FRAME} />
         ))}
@@ -188,8 +203,58 @@ function SceneStep({ game, patch }) {
           <button type="button" className="ghost" disabled={!parts[parts.length - 1].trim()} onClick={addPart}>+ 고민 더 쓰기</button>
         )}
       </section>
-      <p className="hint">비교하고 싶은 집단과 확인할 숫자는 다음 단계에서 열을 고르면서 정해요.</p>
+
+      <Text label="② 그 고민에서 비교하고 싶은 집단은? (두 집단 이상)" rows={2} value={game.groupsAsk} onChange={v => patch({ groupsAsk: v })}
+        hint="예) 공부 시간이 짧은 학생 vs 긴 학생. 성별, 학년, 지역처럼 나누는 기준을 떠올려 봐요."
+        frame={[{ key: 'a', ph: '집단 A' }, '와(과) ', { key: 'b', ph: '집단 B' }, '을(를) 비교해 보고 싶다.']} />
+
+      <Text label="③ 그 집단들의 어떤 숫자를 보면 도움이 될까?" rows={2} value={game.numberAsk} onChange={v => patch({ numberAsk: v })}
+        hint="값의 크기(평균·중앙값·최댓값·최솟값)일 수도, 몇 명·몇 개인지(개수·빈도)일 수도 있어요."
+        frame={[{ key: 't', ph: '대상(예: 성적)' }, '의 ', { key: 's', ph: '평균/중앙값/최댓값/최솟값/개수' }, '을(를) 보면 도움이 될 것 같다.']} />
+      <StatExamples />
     </>
+  )
+}
+
+const EN_STAT = { mean: 'Mean', median: 'Median', max: 'Max', min: 'Min', count: 'Count' }
+
+// 그래프의 가로축(x)·세로축(y)에 무엇을 둘지 고민하는 칸. 고른 것이 코드의 plt.xlabel / plt.ylabel로 이어진다.
+function AxisBox({ game, patch, ds }) {
+  const o = axisOptions(game, ds)
+  const a = axisOf(game)
+  if (game.chart === 'pie') {
+    return (
+      <div className="axisbox">
+        <span className="lbl">⑤ 원그래프에 담을 것</span>
+        <p className="hint">원그래프는 가로축·세로축이 없어요. 조각 하나는 <b>{game.groupBy || '집단'}</b>의 한 그룹이고, 조각의 크기는 <b>{o.yDefault || '개수·합계'}</b>예요. 원은 "전체 중 몫"을 보여 주니 개수·합계에 어울려요(평균에는 어울리지 않아요).</p>
+      </div>
+    )
+  }
+  const stat = isFreq(game) ? 'Count' : (EN_STAT[game.stat] ?? 'Value')
+  const sugX = a.x || 'x', sugY = game.chart === 'hist' ? 'Count' : game.chart === 'scatter' ? (a.y || 'y') : (isFreq(game) ? 'Count' : `${stat} of ${game.measure || 'value'}`)
+  return (
+    <div className="axisbox">
+      <span className="lbl">⑤ 그래프의 가로축(x)과 세로축(y)</span>
+      <Think>
+        <li>읽는 사람이 한눈에 비교하려면 가로축에 무엇을, 세로축에 무엇을 두는 게 좋을까요?</li>
+        <li>가로축 후보와 세로축 후보를 서로 바꾸면 그래프가 어떻게 달라질까요?</li>
+      </Think>
+      <p className="hint">{o.note}</p>
+      <div className="two-col">
+        <label className="field"><span className="lbl">가로축 (x)</span>
+          <select value={a.x} onChange={e => patch({ xAxis: e.target.value })}>{o.x.map(n => <option key={n} value={n}>{n}</option>)}</select></label>
+        <label className="field"><span className="lbl">세로축 (y)</span>
+          <select value={a.y} onChange={e => patch({ yAxis: e.target.value })}>{o.y.map(n => <option key={n} value={n}>{n}</option>)}</select></label>
+      </div>
+      {game.chart === 'scatter' && a.x && a.x === a.y && <p className="warn small" role="status">가로축과 세로축이 같아요. 서로 다른 숫자 열을 골라요.</p>}
+      <div className="two-col">
+        <label className="field"><span className="lbl">가로축 이름 (영어)</span>
+          <input value={game.xLabel} maxLength={40} placeholder={`예: ${sugX}`} onChange={e => patch({ xLabel: e.target.value })} /></label>
+        <label className="field"><span className="lbl">세로축 이름 (영어)</span>
+          <input value={game.yLabel} maxLength={40} placeholder={`예: ${sugY}`} onChange={e => patch({ yLabel: e.target.value })} /></label>
+      </div>
+      <p className="hint">Colab 그래프에는 한글 글꼴이 없어서 축 이름과 제목은 영어로 써요. 코드의 <code>plt.xlabel("…")</code>, <code>plt.ylabel("…")</code>에 그대로 쓰여요.</p>
+    </div>
   )
 }
 
@@ -209,6 +274,14 @@ function QuestionStep({ game, patch, go }) {
   const rec = ds.pair
   return (
     <>
+      {(game.groupsAsk.trim() || game.numberAsk.trim()) && (
+        <div className="recap">
+          <b>앞에서 떠올린 것</b>
+          {game.groupsAsk.trim() && <p><span>비교하고 싶은 집단</span> {game.groupsAsk.trim()}</p>}
+          {game.numberAsk.trim() && <p><span>확인하고 싶은 숫자</span> {game.numberAsk.trim()}</p>}
+          <small className="muted">이 두 줄에 맞는 열과 통계를 아래에서 골라요.</small>
+        </div>
+      )}
       <Seg label="질문 틀" hint="STEP 4. 어떤 모양의 질문을 만들까요?" value={game.frame} onChange={setFrame}
         options={FRAMES.map(f => ({ id: f.id, ko: `${f.id}. ${f.name}`, desc: f.text }))} />
       {rec && <p className="hint">선생님 추천 짝: 묶는 기준 <code>{rec.groupBy}</code> → 계산할 열 <code>{rec.measure}</code> {rec.newCol && <>· 새 열 아이디어: {rec.newCol}</>}</p>}
@@ -239,6 +312,7 @@ function QuestionStep({ game, patch, go }) {
         <label className="field"><span className="lbl">기타 그래프 이름</span>
           <input value={game.chartEtc} maxLength={20} placeholder="예: 상자그림(box), 가로 막대(barh)" onChange={e => patch({ chartEtc: e.target.value })} /></label>
       )}
+      <AxisBox game={game} patch={patch} ds={ds} />
 
       <div className="field">
         <span className="lbl">1-2. 우리 팀의 탐구 질문 (필수, 한 문장)</span>
@@ -314,46 +388,62 @@ function QuestionStep({ game, patch, go }) {
 function UnderstandStep({ game, patch, go }) {
   const ds = getDs(game.dataset)
   if (!ds) return <p className="warn">먼저 데이터를 골라 주세요. <button className="link" onClick={() => go('data')}>데이터 고르기로 가기</button></p>
-  const used = usedColsOf(game)
-  const toggle = c => patch(g => {
-    const base = usedColsOf(g)
-    if (base.some(u => u.name === c.name)) return { usedCols: base.filter(u => u.name !== c.name) }
-    return base.length >= 6 ? {} : { usedCols: [...base, { name: c.name, meaning: c.meaning }] }
-  })
+  const used = game.usedCols
+  const toggle = c => patch(g => (g.usedCols.some(u => u.name === c.name)
+    ? { usedCols: g.usedCols.filter(u => u.name !== c.name) }
+    : g.usedCols.length >= 4 ? {} : { usedCols: [...g.usedCols, { name: c.name, meaning: c.meaning }] }))
+  const fromQuestion = () => patch(g => ({
+    usedCols: [g.groupBy, g.measure].filter(Boolean).map(n => g.usedCols.find(u => u.name === n) ?? { name: n, meaning: getCol(ds, n)?.meaning ?? '' }),
+  }))
+  const setMeaning = (name, meaning) => patch(g => ({ usedCols: g.usedCols.map(u => (u.name === name ? { ...u, meaning } : u)) }))
   const blanks = ds.columns.filter(c => c.missing > 0)
+  const firstRow = ds.preview[0] ?? []
+  const shown = ds.header.slice(0, 8)
   return (
     <>
-      <p className="hint">가볍게 확인하는 단계예요. 아래 값은 미리 본 값이라, 노트북 미션 0~1(<code>head</code>, <code>shape</code>, <code>info</code>)을 실행했을 때와 같은지만 보면 돼요. 꼭 써야 하는 건 <b>한 행의 뜻 하나</b>예요.</p>
+      <p className="hint">노트북 미션 0~1(<code>head</code>, <code>shape</code>, <code>columns</code>, <code>info</code>)을 실행한 뒤 함께 보며 채워요. 아래 값은 미리 본 값이니 노트북 결과와 같은지 확인해요.</p>
       <dl className="facts wide">
         <div><dt>파일 이름</dt><dd><code>{ds.id}.csv</code></dd></div>
         <div><dt>행 × 열 (shape)</dt><dd>{ds.rows.toLocaleString()}행 × {ds.columns.length}열</dd></div>
         <div><dt>결측값이 있는 열</dt><dd>{blanks.length ? blanks.map(c => `${c.name} ${c.missing}개`).join(', ') : '없음'}</dd></div>
       </dl>
-      <Text label="한 행은 무엇을 뜻하나요? (필수)" value={game.rowMeaning} max={60} onChange={v => patch({ rowMeaning: v })} hint="예) 학생 1명의 기록 1건 / 영화 1편 / 팀의 한 시즌" />
+
+      <div className="rowdemo">
+        <b>한 행이란? — 표의 가로 한 줄이에요</b>
+        <p className="hint">아래는 이 데이터의 <b>첫 번째 행</b>이에요 (열 {ds.header.length}개 중 앞 {shown.length}개). 이 한 줄은 <b>누구(무엇) 하나</b>에 대한 정보일까요?</p>
+        <div className="tablewrap">
+          <table>
+            <thead><tr>{shown.map(h => <th key={h}>{h}</th>)}</tr></thead>
+            <tbody><tr>{shown.map((h, i) => <td key={h}>{firstRow[i] || <span className="muted">(NaN)</span>}</td>)}</tr></tbody>
+          </table>
+        </div>
+        <p className="hint">예) 학생 1명의 기록 1건 / 영화 1편 / 한 팀의 한 시즌 / 한 도시의 한 시각 측정. 이 데이터는 <b>{ds.desc}</b>예요.</p>
+      </div>
+      <Text label="이 데이터의 한 행은 무엇 하나를 뜻하나요?" value={game.rowMeaning} max={60} onChange={v => patch({ rowMeaning: v })}
+        hint="평균·개수를 셀 때 '무엇 몇 개의 평균인지' 알아야 해서 묻는 거예요. 발표 3장에도 들어가요."
+        frame={['이 데이터의 한 행은 ', { key: 'w', ph: '무엇 하나(예: 학생 1명, 영화 1편)' }, '의 기록 1건이다.']} />
+
       <div className="field">
-        <span className="lbl">사용할 열</span>
-        <p className="hint">질문에서 고른 열이 자동으로 들어갔어요. 더 쓰고 싶은 열이 있을 때만 아래에서 추가해요. (선택)</p>
-        {used.length === 0 && <p className="muted small">아직 고른 열이 없어요. 앞 단계에서 묶는 기준과 계산할 것을 골라요.</p>}
+        <span className="lbl">사용할 열 3~4개 ({used.length}/4)</span>
+        <p className="hint">열 이름 · 뜻 · 숫자인지 글자인지. 눌러서 고르고, 뜻은 우리 말로 고쳐 써도 돼요.</p>
+        <button type="button" className="ghost" onClick={fromQuestion} disabled={!game.groupBy || !hasMeasure(game)}>질문에서 고른 열 넣기</button>
+        <div className="colgrid">
+          {ds.columns.map(c => {
+            const on = used.some(u => u.name === c.name)
+            return (
+              <button key={c.name} type="button" aria-pressed={on} className={`col ${on ? 'on' : ''}`} onClick={() => toggle(c)}>
+                <code>{c.name}</code><span>{c.meaning}</span><small>{KIND_LABEL[c.kind]}{c.missing ? ` · 결측값 ${c.missing}` : ''}</small>
+              </button>
+            )
+          })}
+        </div>
         {used.map(u => (
           <div key={u.name} className="mrow">
             <code>{u.name}</code>
-            <span>{u.meaning}</span>
+            <input aria-label={`${u.name}의 뜻`} value={u.meaning} onChange={e => setMeaning(u.name, e.target.value)} />
             <small className="muted">{getCol(ds, u.name)?.kind === 'number' ? '숫자' : '글자'}</small>
           </div>
         ))}
-        <details className="optional">
-          <summary>사용할 열 더 추가하기 (선택)</summary>
-          <div className="colgrid">
-            {ds.columns.map(c => {
-              const on = used.some(u => u.name === c.name)
-              return (
-                <button key={c.name} type="button" aria-pressed={on} className={`col ${on ? 'on' : ''}`} onClick={() => toggle(c)}>
-                  <code>{c.name}</code><span>{c.meaning}</span><small>{KIND_LABEL[c.kind]}{c.missing ? ` · 결측값 ${c.missing}` : ''}</small>
-                </button>
-              )
-            })}
-          </div>
-        </details>
       </div>
     </>
   )
@@ -376,6 +466,7 @@ function MethodStep({ game, patch, go }) {
         <div><b>② 계산할 것</b><span>{isFreq(game) ? <code>빈도(그룹별 개수)</code> : <><code>{game.measure}</code> <small>{mc?.meaning}</small></>}</span></div>
         <div><b>③ 통계</b><span><code>{isFreq(game) ? 'value_counts() / count()' : s.fn}</code> <small>{isFreq(game) ? '그룹마다 몇 개인지' : s.desc}</small></span></div>
         <div><b>⑤ 그래프 종류</b><span><code>{ch.id === 'etc' ? ch.ko : ch.id}</code> <small>{ch.desc}</small></span></div>
+        {!axisOf(game).pie && <div><b>⑤ 그래프 축</b><span>가로 <code>{axisOf(game).x || '?'}</code> · 세로 <code>{axisOf(game).y || '?'}</code> <small>{game.xLabel || game.yLabel ? `축 이름: ${game.xLabel || '?'} / ${game.yLabel || '?'}` : '축 이름은 앞 단계에서 정해요'}</small></span></div>}
       </div>
       <p className="hint">① ② ③ ⑤는 앞 단계에서 정했어요. 바꾸려면 "열 고르고 질문 만들기"로 돌아가요.</p>
 
@@ -453,7 +544,7 @@ const STUCK = {
   data: [['어떤 데이터를 골라야 할지 모르겠어요', '"추천" 표시가 붙은 분야부터 열어 보세요. 열 목록의 뜻을 읽고, 질문이 떠오르는 데이터를 고르면 돼요.'], ['고른 뒤에 바꾸고 싶어요', '다른 데이터를 누르면 바뀌어요. 이미 고른 열은 새로 골라야 해요.']],
   scene: [['고민이 떠오르지 않아요', '그 직업의 하루를 상상해 보세요. 어떤 선택을 해야 할 때 "숫자로 알면 좋겠다"는 생각이 들까요? 한 칸만 써도 충분해요.']],
   question: [['어떤 열을 골라야 할지 모르겠어요', '선생님 추천 짝부터 시작해 보세요. 열의 뜻을 읽고, 앞 단계에서 떠올린 고민을 풀어 줄 열(묶는 기준)과 숫자를 찾으면 돼요.'], ['질문이 너무 넓어요', '"무엇으로 묶고, 어떤 숫자를 비교할지" 한 쌍으로 줄여요.'], ['피드백에서 ○가 있어요', '○는 고치면 좋은 점이에요. 고른 열 이름이 질문 문장에 그대로 들어갔는지 보고, 고친 뒤 다시 피드백을 받아도 돼요.']],
-  understand: [['열 뜻이 어려워요', '데이터 고르기 단계의 "열 목록" 뜻을 읽어 보세요. 우리 말로 쉽게 바꿔 써도 돼요.']],
+  understand: [['"한 행"이 무슨 뜻이에요?', '표에서 가로로 한 줄을 "행"이라고 해요. 위에 보여 준 첫 번째 행을 보고, 그 한 줄이 학생 1명인지 영화 1편인지 어떤 한 번의 측정인지 말해 보세요.'], ['열 뜻이 어려워요', '데이터 고르기 단계의 "열 목록" 뜻을 읽어 보세요. 우리 말로 쉽게 바꿔 써도 돼요.'], ['어떤 열을 골라야 해요?', '질문에서 쓴 열(묶는 기준, 계산할 열)은 꼭 넣고, 그 밖에 질문과 관련 있어 보이는 열을 1~2개 더 골라요. "질문에서 고른 열 넣기" 버튼이 도와줘요.']],
   method: [['결측값(NaN) 처리를 무엇으로 해야 할지 모르겠어요', '결측값(NaN)이 5% 이하이고 계산할 열이 아니면 "그대로 두기"가 무난해요. 확신이 없으면 이유를 솔직하게 쓰면 돼요.'], ['코드 설계 점검이 계속 ○예요', '틀의 괄호를 우리가 고른 열 이름·함수 이름으로 바꿔 썼는지 확인해요. 따옴표 안에 열 이름이 정확히 들어가야 해요.']],
   summary: [['빠진 단계가 있어요', '위의 "아직 덜 쓴 단계"를 눌러 이동해요.']],
 }

@@ -16,6 +16,7 @@ export const START = {
   frame: 'A', groupBy: '', measure: '', stat: 'mean', chart: 'bar',
   measureMode: 'column', // 'column': 숫자 열의 통계 / 'freq': 그룹별 개수(빈도)
   statEtc: '', chartEtc: '', extraCompare: '',
+  xAxis: '', yAxis: '', xLabel: '', yLabel: '', // 그래프의 가로축(x)·세로축(y)에 올 것, 그래프에 쓸 영어 축 이름
   question: '', reviews: [], // reviews: 질문 검토 기록 (최대 5회) [{ text, picks, score, pass, at }]
   scene: '', extraQ: '', expect: '',
   title: '',

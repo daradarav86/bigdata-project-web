@@ -1,5 +1,5 @@
 ﻿import { getDs } from './data/meta.js'
-import { statFor, chartFor, isFreq, measureName, concernText, frameOf, missingOf, nameOf, usedColsOf, sceneAuto } from './doc.js'
+import { statFor, chartFor, isFreq, measureName, concernText, frameOf, missingOf, nameOf, usedColsOf, sceneAuto, axisText } from './doc.js'
 
 // 기획안을 Word(.docx)로 만든다. Drive에 올려 "Google 문서로 열기"를 하면 구글 문서에서 이어서 쓸 수 있다.
 // 번호와 제목은 [템플릿] 데이터 프로젝트 기획안 v2를 따른다. 4번(분석 결과)은 쓴 만큼만 채우고 나머지는 안내 문구를 둔다.
@@ -84,7 +84,7 @@ export function buildPlanDocx(g, docx) {
     H2('STEP 2. 데이터 고르기'),
     ...P(ds ? `${ds.field} 분야 → ${ds.id}.csv (${ds.desc})` : ''),
     H2('STEP 3. 진로 장면에서 궁금한 점'),
-    table([0.4, 0.6], [['떠올리기', '우리 팀의 답'], ['① 판단이 필요한 순간과 고민', concernText(g)], ['② 비교하고 싶은 집단', auto.groups], ['③ 확인할 숫자', auto.number]]),
+    table([0.4, 0.6], [['떠올리기', '우리 팀의 답'], ['① 판단이 필요한 순간과 고민', concernText(g)], ['② 비교하고 싶은 집단', g.groupsAsk.trim() || auto.groups], ['③ 확인할 숫자', g.numberAsk.trim() || auto.number]]),
     H3('1-1. 우리 팀의 진로 키워드와 이유'), ...P(`${g.keyword} — ${g.keywordWhy}`),
     H3(`1-2. 우리 팀의 탐구 질문 (질문 틀 ${g.frame}: ${f.name})`), ...P(g.question, { bold: true }),
     H3('1-3. 이 질문이 진로에서 중요한 장면'), ...P(g.scene),
@@ -109,7 +109,7 @@ export function buildPlanDocx(g, docx) {
       ['단계', '정할 것', '우리 팀의 선택'],
       ['①', '묶는 기준', g.groupBy], ['②', '계산할 것', isFreq(g) ? '빈도(그룹별 개수)' : g.measure], ['③', '통계', isFreq(g) ? '개수(count / value_counts)' : s.fn],
       ['④', '결측값(NaN) 처리', `${mm ? mm.ko : ''}\n${g.missingWhy}`],
-      ['⑤', '그래프 종류', c.ko], ['⑥', '새 열 (선택)', g.newCol || '이번에는 만들지 않음'],
+      ['⑤', '그래프 종류와 축', c.ko + axisText(g)], ['⑥', '새 열 (선택)', g.newCol || '이번에는 만들지 않음'],
       ['⑦', '결과 읽는 방법', '가장 큰 그룹, 가장 작은 그룹, 그 차이(큰 값 − 작은 값)를 숫자로 말하기'],
       ...(g.extraCompare.trim() ? [['⑧', '더 비교해 보고 싶은 것', g.extraCompare]] : []),
     ]),
