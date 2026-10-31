@@ -1,5 +1,6 @@
 ﻿import { getDs } from './data/meta.js'
-import { statFor, chartFor, isFreq, measureName, concernText, frameOf, missingOf, nameOf, usedColsOf, sceneAuto, axisText } from './doc.js'
+import { statFor, chartFor, isFreq, measureName, concernText, frameOf, missingOf, nameOf, usedColsOf, sceneAuto, axisText, speakersOf } from './doc.js'
+import { josa } from './josa.js'
 
 // 기획안을 Word(.docx)로 만든다. Drive에 올려 "Google 문서로 열기"를 하면 구글 문서에서 이어서 쓸 수 있다.
 // 번호와 제목은 [템플릿] 데이터 프로젝트 기획안 v2를 따른다. 4번(분석 결과)은 쓴 만큼만 채우고 나머지는 안내 문구를 둔다.
@@ -55,11 +56,12 @@ export function buildPlanDocx(g, docx) {
   const usedCols = usedColsOf(g).map(c => `${c.name}: ${c.meaning}`).join('\n')
   const auto = sceneAuto(g)
   const blanks = ds ? ds.columns.filter(c => c.missing > 0).map(c => `${c.name} ${c.missing}개`).join(', ') : ''
-  const spk = d.speakers ?? []
+  const spk = speakersOf(d)
   const interp = [
-    `① 사실: ${g.groupBy}별 ${isFreq(g) ? '개수(빈도)는' : `${g.measure}의 ${s.topic}`} ${d.hi || '___'}이(가) 가장 높고(${d.hiVal || '___'}), ${d.lo || '___'}이(가) 가장 낮았다(${d.loVal || '___'}).`,
+    // 그룹·열 이름은 영어가 많아 받침을 알 수 없으므로 바로 뒤에 조사가 오지 않게 쓴다 (발표 5장과 같은 문장)
+    `① 사실: ${g.groupBy}별 ${isFreq(g) ? '개수(빈도)는' : `${g.measure}의 ${s.topic}`} 가장 높은 그룹 ${d.hi || '___'}(${d.hiVal || '___'}), 가장 낮은 그룹 ${d.lo || '___'}(${d.loVal || '___'}).`,
     `② 비교: 두 집단의 차이는 ${d.diffPts ? d.diffPts + '점' : '___'}로, ${d.diffX || '___'}배 정도였다.`,
-    `③ 의미: 이는 ${d.m1 || g.groupBy} 와(과) ${d.m2 || measureName(g)} 가 함께 움직이는 경향이 있음을 보여 준다.`,
+    `③ 의미: 이는 두 값(${d.m1 || g.groupBy}, ${d.m2 || measureName(g)})이 함께 움직이는 경향이 있음을 보여 준다.`,
   ].join('\n')
 
   const body = [
@@ -127,7 +129,7 @@ export function buildPlanDocx(g, docx) {
     H3('4-5. 해석 (3문장, 숫자 넣기)'), ...P(d.hi ? interp : LATER),
     H3('4-6. 한계 (1문장 이상)'), ...P(d.limit ? `다만 ${d.limit} 때문에 이 결과를 모든 대상에게 일반화하기 어렵다.` : LATER),
     H3('4-7. 우리 진로와 연결'),
-    ...P(d.use ? `이 결과는 ${d.job || g.keyword}이(가) ${d.doing || '___'}을(를) 할 때 ${d.use}로 참고할 수 있다. 다만 ${d.careful || '___'}도 함께 확인해야 한다. 다음에는 ${d.next || '___'} 데이터를 더 보고 싶다.` : LATER),
+    ...P(d.use ? `이 결과는 ${d.job || g.keyword}${josa(d.job || g.keyword, '이(가)')} ${d.doing || '___'}${josa(d.doing, '을(를)')} 할 때 ${d.use}${josa(d.use, '으로(로)')} 참고할 수 있다. 다만 ${d.careful || '___'}도 함께 확인해야 한다. 다음에는 ${d.next || '___'} 데이터를 더 보고 싶다.` : LATER),
 
     H1('5. 3분 발표 준비'),
     table([0.18, 0.55, 0.27], [

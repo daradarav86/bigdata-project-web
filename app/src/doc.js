@@ -162,6 +162,11 @@ export const MAX_CONCERNS = 4
 export const concernText = g => g.concernParts.map((p, i) => (p.trim() ? `(${i + 1}) ${p.trim()}` : '')).filter(Boolean).join('\n')
 // 발표 문장에 한 줄로 넣을 때는 첫 번째 고민을 쓴다
 export const concernMain = g => (g.concernParts.find(p => p.trim()) || '').trim()
+
+// 발표 장마다 말하는 사람. 장마다 따로(deck.speaker0 ~ speaker6) 저장해서, 팀원이 서로 다른 장을 동시에 정해도 덮어쓰지 않는다.
+// 예전에는 deck.speakers 목록 하나에 저장했으므로 그 값도 읽는다.
+export const SLIDE_COUNT = 7
+export const speakersOf = d => Array.from({ length: SLIDE_COUNT }, (_, n) => d[`speaker${n}`] ?? d.speakers?.[n] ?? '')
 // 그래프 축을 한 줄로 (원그래프는 축이 없다). 영어 축 이름을 썼으면 함께 보여 준다.
 export function axisText(g) {
   const a = axisOf(g)

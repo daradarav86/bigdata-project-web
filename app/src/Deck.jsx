@@ -1,7 +1,8 @@
 ﻿import { useRef, useState } from 'react'
 import { getDs, LIMITS } from './data/meta.js'
-import { statFor, missingOf, nameOf, measureName, concernMain, isFreq, usedColsOf } from './doc.js'
+import { statFor, missingOf, nameOf, measureName, concernMain, isFreq, usedColsOf, speakersOf } from './doc.js'
 import { Text } from './ui.jsx'
+import { josa } from './josa.js'
 
 // 그래프 이미지를 줄여서 저장한다 (브라우저 저장 용량 보호)
 function shrink(file, max = 1000) {
@@ -48,7 +49,7 @@ function slides({ g, d, ds }) {
         <>
           <Title kw="진로" rest="와 궁금했던 점" />
           <p>우리는 <V v={g.keyword} /> 진로를 생각하고 있어요.</p>
-          <p>이 진로에서는 <V v={d.know} ph="알아야 할 것" />을(를) 알아야 해서, <V v={d.wonder || concernMain(g)} ph="궁금한 것" />이(가) 궁금했습니다.</p>
+          <p>이 진로에서는 <V v={d.know} ph="알아야 할 것" />{josa(d.know, '을(를)')} 알아야 해서, <V v={d.wonder || concernMain(g)} ph="궁금한 것" />{josa(d.wonder || concernMain(g), '이(가)')} 궁금했습니다.</p>
           <ul className="s-list">{g.members.map((m, i) => <li key={i}>{nameOf(m, i)}: <V v={m.career} /></li>)}</ul>
         </>
       ),
@@ -89,9 +90,10 @@ function slides({ g, d, ds }) {
       view: (
         <>
           <Title kw="해석" rest="과 한계" />
-          <p>① <V v={g.groupBy} />별 {isFreq(g) ? <>개수(빈도)는</> : <><V v={g.measure} />의 {s.topic}</>} <V v={d.hi} />이(가) 가장 높고(<V v={d.hiVal} />), <V v={d.lo} />이(가) 가장 낮았다(<V v={d.loVal} />).</p>
+          {/* 그룹 이름·열 이름은 영어(yes, GP, studytime)가 많아 받침을 알 수 없으므로, 바로 뒤에 조사가 오지 않게 쓴다 */}
+          <p>① <V v={g.groupBy} />별 {isFreq(g) ? <>개수(빈도)는</> : <><V v={g.measure} />의 {s.topic}</>} 가장 높은 그룹 <V v={d.hi} />(<V v={d.hiVal} />), 가장 낮은 그룹 <V v={d.lo} />(<V v={d.loVal} />).</p>
           <p>② 두 집단의 차이는 <V v={d.diffPts && `${d.diffPts}점`} />이다.</p>
-          <p>③ 이는 <V v={d.m1 || g.groupBy} />와(과) <V v={d.m2 || measureName(g)} />가 함께 움직이는 경향을 보여 준다.</p>
+          <p>③ 이는 두 값(<V v={d.m1 || g.groupBy} />, <V v={d.m2 || measureName(g)} />)이 함께 움직이는 경향을 보여 준다.</p>
           <p>한계: 다만 <V v={d.limit} ph="이유" /> 때문에 이 결과를 모든 대상에게 일반화하기 어렵다.</p>
           <p className="small">결측값(NaN) 처리 비교: 원본 <V v={d.orig} /> / 제거 <V v={d.rem} />(<V v={d.remRows} />행) / 대체 <V v={d.rep} /> → <V v={missingOf(g.missingMethod)?.ko} />, 이유: <V v={g.missingWhy} /></p>
         </>
@@ -103,7 +105,7 @@ function slides({ g, d, ds }) {
       view: (
         <>
           <Title kw="진로" rest="와 연결" />
-          <p>이 결과는 <V v={d.job || g.keyword} ph="직업" />이(가) <V v={d.doing} ph="일" />을(를) 할 때 <V v={d.use} ph="쓰임" />로 참고할 수 있어요.</p>
+          <p>이 결과는 <V v={d.job || g.keyword} ph="직업" />{josa(d.job || g.keyword, '이(가)')} <V v={d.doing} ph="일" />{josa(d.doing, '을(를)')} 할 때 <V v={d.use} ph="쓰임" />{josa(d.use, '으로(로)')} 참고할 수 있어요.</p>
           <p>다만 <V v={d.careful} ph="확인할 것" />도 함께 확인해야 해요.</p>
           <p>다음에 알고 싶은 것: <V v={d.next} /></p>
           <p className="s-closing">마무리 (모두 함께): 우리가 알게 된 것은 <V v={d.closing} ph="한 문장" /> 입니다.</p>
@@ -169,8 +171,8 @@ export default function Deck({ game, setDeck, go }) {
   const list = slides({ g: game, d, ds })
   const cur = list[i]
   const members = game.members.map(nameOf)
-  const speakers = d.speakers ?? []
-  const setSpeaker = v => { const next = [...speakers]; next[i] = v; setDeck({ speakers: next }) }
+  const speakers = speakersOf(d)
+  const setSpeaker = v => setDeck({ [`speaker${i}`]: v }) // 장마다 따로 저장 (doc.js speakersOf)
 
   const load = async file => {
     setErr('')
@@ -229,7 +231,8 @@ export default function Deck({ game, setDeck, go }) {
         ))}
         {i === 4 && (
           <div className="chips" aria-label="한계 후보">
-            {LIMITS.map(l => <button key={l} onClick={() => setDeck({ limit: l.replace(/다\.$/, '') })}>{l}</button>)}
+            {/* "…없다." → "…없기": 슬라이드에서 "다만 …없기 때문에"로 이어진다 */}
+            {LIMITS.map(l => <button key={l} onClick={() => setDeck({ limit: l.replace(/다\.$/, '기') })}>{l}</button>)}
           </div>
         )}
         {i === 3 && game.groupBy && <p className="hint">노트북의 <code>result</code> 표에서 가장 큰·작은 그룹을 읽어요. 가장 큰 값 <code>result.idxmax()</code>, 가장 작은 값 <code>result.idxmin()</code>.</p>}

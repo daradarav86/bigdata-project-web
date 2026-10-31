@@ -114,6 +114,13 @@ function Detail({ row, onChange, onClose }) {
   try { planText = buildPlanText(g) } catch { planText = '(기획안을 만들 수 없는 상태예요)' }
   const rs = reviewState(g)
 
+  // 알림(코인을 줬어요 등)은 잠깐 보여 주고 지운다 (다른 탭으로 옮겨도 남아 있지 않게)
+  useEffect(() => {
+    if (!msg) return undefined
+    const id = setTimeout(() => setMsg(''), 4000)
+    return () => clearTimeout(id)
+  }, [msg])
+
   const [log, setLog] = useState(null) // 서버에 남은 코치 대화 전체 (대화 탭을 열 때 불러온다)
   useEffect(() => {
     if (tab !== 'chat' || !SERVER || log) return

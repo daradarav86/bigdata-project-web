@@ -9,7 +9,8 @@ export function checkQuestion(text, picks = {}) {
   return [
     { ok: t.length >= 10 && t.length <= 80, label: '한 문장이에요 (10~80자)' },
     { ok: names.length > 0 && has.length === names.length, label: names.length ? `고른 열(${names.join(', ')})이 질문에 들어 있어요` : '먼저 묶는 기준과 계산할 열을 골라요' },
-    { ok: /(다를까|차이|비교|높고|낮|많|적|변할까|어디)/.test(t), label: '무엇과 무엇을 비교하는지 드러나요' },
+    // "많이 하면"의 "많"처럼 비교가 아닌 말에 걸리지 않도록 비교하는 표현만 본다
+    { ok: /(다를까|다른가|차이|비교|높을까|높고|높은|낮을까|낮고|낮은|많을까|많고|많은|적을까|적고|적은|변할까|어디|가장)/.test(t), label: '무엇과 무엇을 비교하는지 드러나요' },
     { ok: t.length > 0 && !/(때문에|원인|하면.{0,12}(오를|높아질|좋아질|늘|줄)까)/.test(t), label: '원인을 단정하지 않아요' },
   ]
 }

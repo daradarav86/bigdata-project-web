@@ -358,7 +358,7 @@ function QuestionStep({ game, patch, go }) {
         </>
       )}
       {isFreq(game) && <p className="hint">빈도는 그룹별 개수를 세는 것이라 통계는 "개수"로 정해져요. 코드는 <code>value_counts()</code> 또는 <code>groupby(...).count()</code>를 써요.</p>}
-      <Seg label="④ 그래프 종류 (수업에서 배운 것)" hint={`질문 틀 ${fr.id}는 보통 ${fr.chart === 'line' ? '선' : '막대'}그래프예요. 더 비교하고 싶은 그래프가 있으면 "기타"에 써요.`}
+      <Seg label="⑤ 그래프 종류 (수업에서 배운 것)" hint={`질문 틀 ${fr.id}는 보통 ${fr.chart === 'line' ? '선' : '막대'}그래프예요. 더 비교하고 싶은 그래프가 있으면 "기타"에 써요.`}
         value={game.chart} onChange={v => patch({ chart: v })}
         options={[...CHARTS.map(c => ({ id: c.id, ko: c.ko, desc: c.desc })), { id: 'etc', ko: '기타', desc: '위에 없는 그래프를 직접 써요' }]} />
       {game.chart === 'etc' && (
@@ -550,7 +550,7 @@ function MethodStep({ game, patch, go }) {
   )
 }
 
-function SummaryStep({ game, patch, go }) {
+function SummaryStep({ game, patch, go, deckOpen = true }) {
   const [copied, setCopied] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState('')
@@ -568,13 +568,15 @@ function SummaryStep({ game, patch, go }) {
       <button className="ghost" disabled={!game.question.trim()} onClick={() => patch({ title: game.question })}>질문으로 채우기</button>
       {todo.length > 0
         ? <div className="todo"><b>아직 덜 쓴 단계</b>{todo.map(s => <button key={s.id} className="link" onClick={() => go(s.id)}>{s.name}</button>)}</div>
-        : <p className="ok-msg">기획안의 모든 단계를 썼어요. 아래 내용을 확인하고, 발표 만들기로 넘어가요.</p>}
+        : <p className="ok-msg">기획안의 모든 단계를 썼어요. 아래 내용을 확인하고 {deckOpen ? '발표 만들기로 넘어가요.' : 'Word로 저장해 두어요.'}</p>}
       <pre className="docview">{text}</pre>
       <div className="row start">
         <button className="primary" disabled={saving} onClick={saveDocx}>{saving ? '만드는 중…' : '기획안 Word(.docx)로 저장'}</button>
         <button className="ghost" onClick={copy}>{copied ? '복사됨' : '글만 복사'}</button>
-        <button className="ghost" onClick={() => go('deck')}>발표 슬라이드 만들기</button>
+        {deckOpen && <button className="ghost" onClick={() => go('deck')}>발표 슬라이드 만들기</button>}
       </div>
+      {/* 선생님이 아직 발표 단계를 열지 않았으면 눌러도 아무 일이 없는 버튼 대신 안내를 보여 준다 */}
+      {!deckOpen && <p className="hint">🔒 발표 슬라이드는 선생님이 발표 단계를 열면 만들 수 있어요.</p>}
       {saved && <p className="ok-msg" role="status">"{saved}"를 내려받았어요.</p>}
       {saveErr && <p className="warn" role="alert">{saveErr}</p>}
       <div className="howto-docs">
