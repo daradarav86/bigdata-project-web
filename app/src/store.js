@@ -12,7 +12,7 @@ export const START = {
   keyword: '', keywordWhy: '',
   dataset: '',
   concern: '', groupsAsk: '', numberAsk: '',
-  concernParts: ['', '', '', ''], // 진로 장면 ①: 여러 질문에 쓴 답 (concern에는 합친 글이 들어간다)
+  concernParts: ['', ''], // 진로 장면 ①: 고민을 여러 칸에 (concern에는 합친 글이 들어간다)
   frame: 'A', groupBy: '', measure: '', stat: 'mean', chart: 'bar',
   measureMode: 'column', // 'column': 숫자 열의 통계 / 'freq': 그룹별 개수(빈도)
   statEtc: '', chartEtc: '', extraCompare: '',
@@ -28,7 +28,7 @@ export const START = {
 // 새로 생긴 항목이 없는 예전 기록도 열리도록 기본값을 채운다
 function withDefaults(g) {
   const out = { ...START, ...g }
-  if (!g.concernParts && g.concern) out.concernParts = ['', g.concern, '', ''] // 예전에 한 칸으로 쓴 고민을 두 번째 칸으로
+  if (!g.concernParts && g.concern) out.concernParts = [g.concern, ''] // 예전에 한 칸으로 쓴 고민을 첫 번째 칸으로
   return out
 }
 

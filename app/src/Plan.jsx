@@ -1,7 +1,7 @@
 ﻿import { useMemo, useState } from 'react'
 import datasets from './data/datasets.json'
 import { FRAMES, STATS, CHARTS, MISSING, KIND_LABEL, getDs, getCol } from './data/meta.js'
-import { PLAN_STEPS, stepDone, draftQuestion, contextOf, checkCodeDesign, buildPlanText, pct, statFor, chartFor, isFreq, hasMeasure, picksKey, frameOf, nameOf, missingOf, reviewState, MAX_REVIEWS, SCENE_Q, MAX_CONCERNS, concernText } from './doc.js'
+import { PLAN_STEPS, stepDone, draftQuestion, contextOf, checkCodeDesign, buildPlanText, pct, statFor, chartFor, isFreq, hasMeasure, picksKey, frameOf, nameOf, missingOf, reviewState, MAX_REVIEWS, MAX_CONCERNS, concernText } from './doc.js'
 import { reviewQuestion } from './coach.js'
 import { Text, Seg, Think, Stuck } from './ui.jsx'
 import Chat from './Chat.jsx'
@@ -166,14 +166,8 @@ function DataStep({ game, patch, go }) {
   )
 }
 
-// 진로 장면 ①의 문장 틀: 질문마다 한 개씩 (뒤쪽 "또 다른 고민"은 마지막 틀을 쓴다)
-const SCENE_FRAMES = [
-  ['이 일을 하는 사람은 ', { key: 's', ph: '어떤 상황' }, '일 때 ', { key: 'c', ph: '어떤 선택이나 판단' }, '을(를) 해야 한다.'],
-  ['그때 ', { key: 'c', ph: '고민' }, '을(를) 가장 자주 고민한다. 왜냐하면 ', { key: 'y', ph: '이유' }, ' 때문이다.'],
-  [{ key: 'i', ph: '필요한 정보(숫자)' }, '을(를) 알면 ', { key: 'd', ph: '어떤 판단' }, '을(를) 더 잘할 수 있을 것이다.'],
-  ['지금은 ', { key: 'm', ph: '방법(경험·감·자료)' }, '으로(로) 해결한다. 하지만 ', { key: 'l', ph: '아쉬운 점' }, ' 때문에 자료로 확인해 보고 싶다.'],
-]
-const SCENE_EXTRA = ['또 다른 고민은 ', { key: 'c', ph: '고민' }, '이다. 그런 고민이 생기는 때는 ', { key: 's', ph: '상황' }, '이다.']
+// 진로 장면 ①의 문장 틀 (고민 칸마다 쓸 수 있다)
+const CONCERN_FRAME = ['이 일을 하는 사람은 ', { key: 's', ph: '어떤 상황' }, '일 때 ', { key: 'c', ph: '고민' }, '을(를) 가장 자주 고민한다. 왜냐하면 ', { key: 'y', ph: '이유' }, ' 때문이다.']
 
 // 숫자 예시: 수업에서 배운 통계와 "빈도"
 function StatExamples() {
@@ -195,16 +189,15 @@ function SceneStep({ game, patch }) {
     return { concernParts: p, concern: concernText({ concernParts: p }) }
   })
   const addPart = () => patch(g => (g.concernParts.length >= MAX_CONCERNS ? {} : { concernParts: [...g.concernParts, ''] }))
-  const filledParts = parts.filter(p => p.trim().length >= 2).length
   return (
     <>
-      <p className="hint">STEP 3. 직업의 장면을 여러 방향으로 떠올려요. 팀원이 돌아가며 답하고, 한 칸에 여러 문장을 써도 좋아요. 이 답이 다음 단계의 질문이 돼요.</p>
+      <p className="hint">STEP 3. 아래 세 질문에 팀원이 돌아가며 답해 보세요. 이 답이 다음 단계의 질문이 돼요.</p>
 
-      <section className="scenebox" aria-label="① 판단과 고민">
-        <h3>① 이 직업을 가진 사람의 판단과 고민 <small className="muted">여러 질문에 답해 보세요 ({filledParts}/{parts.length}칸 작성, 최소 2칸)</small></h3>
+      <section className="scenebox" aria-label="① 가장 자주 고민하는 것">
+        <h3>① 이 직업을 가진 사람이 가장 자주 고민하는 것은?</h3>
+        <p className="hint">고민은 하나가 아니에요. 떠오르는 대로 여러 개를 써 봐요. (예: 학생이 공부를 어떻게 하게 도울까?)</p>
         {parts.map((v, i) => (
-          <Text key={i} label={`${i + 1}. ${SCENE_Q[i] ?? '또 다른 고민이 있다면 적어 보세요.'}`} rows={3} value={v} onChange={t => setPart(i, t)}
-            frame={i < SCENE_FRAMES.length ? SCENE_FRAMES[i] : SCENE_EXTRA} />
+          <Text key={i} label={`고민 ${i + 1}`} rows={3} value={v} onChange={t => setPart(i, t)} frame={CONCERN_FRAME} />
         ))}
         <button type="button" className="ghost" disabled={parts.length >= MAX_CONCERNS} onClick={addPart}>+ 고민 더 쓰기 ({parts.length}/{MAX_CONCERNS})</button>
       </section>
@@ -226,7 +219,6 @@ function SceneStep({ game, patch }) {
     </>
   )
 }
-
 function QuestionStep({ game, patch, go }) {
   const [fb, setFb] = useState(null)
   const ds = getDs(game.dataset)

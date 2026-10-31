@@ -99,7 +99,7 @@ export function stepDone(id, g) {
     case 'team': return filled(g.team) && g.members.every(m => m.name.trim()) && g.pledge
     case 'career': return g.members.every(m => m.career.trim()) && filled(g.keyword, g.keywordWhy)
     case 'data': return !!g.dataset
-    case 'scene': return g.concernParts.filter(p => p.trim().length >= 2).length >= 2 && filled(g.groupsAsk, g.numberAsk)
+    case 'scene': return g.concernParts.slice(0, 2).every(p => p.trim().length >= 2) && filled(g.groupsAsk, g.numberAsk)
     case 'question': return !!g.groupBy && hasMeasure(g) && reviewState(g).accepted && filled(g.scene, g.expect)
     case 'understand': return filled(g.rowMeaning) && g.usedCols.length >= 3
     case 'method': return !!g.missingMethod && filled(g.missingWhy) && checkCodeDesign(g).every(c => c.ok)
@@ -108,18 +108,11 @@ export function stepDone(id, g) {
   }
 }
 
-// 진로 장면 ①: 여러 질문에 쓴 답을 한 덩어리로 합친다 (기획안·발표에서 쓴다)
-export const SCENE_Q = [
-  '이 직업의 하루 중, 판단이나 선택이 필요한 순간은 언제인가요?',
-  '그때 가장 자주 하는 고민은 무엇인가요?',
-  '그 고민을 풀려면 어떤 정보(숫자)가 있으면 좋을까요?',
-  '지금은 그 고민을 어떻게 해결하나요? (경험, 감, 자료 …) 그 방법의 아쉬운 점은?',
-]
-export const MAX_CONCERNS = 6
+// 진로 장면 ①: 고민을 여러 칸에 쓴 답을 한 덩어리로 합친다 (기획안·발표에서 쓴다)
+export const MAX_CONCERNS = 4
 export const concernText = g => g.concernParts.map((p, i) => (p.trim() ? `(${i + 1}) ${p.trim()}` : '')).filter(Boolean).join('\n')
-// 발표 문장에 한 줄로 넣을 때: "가장 자주 하는 고민"(두 번째 칸)을 우선 쓴다
-export const concernMain = g => (g.concernParts[1]?.trim() || g.concernParts.find(p => p.trim()) || '')
-
+// 발표 문장에 한 줄로 넣을 때는 첫 번째 고민을 쓴다
+export const concernMain = g => (g.concernParts.find(p => p.trim()) || '').trim()
 // 기획안 전체 텍스트 (복사용). 기획안 v2의 번호와 제목을 그대로 쓴다.
 export function buildPlanText(g) {
   const ds = getDs(g.dataset)

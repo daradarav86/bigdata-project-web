@@ -72,13 +72,13 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 .bar { height: 8px; background: var(--blue-soft); border-radius: 99px; overflow: hidden; }
 .bar span { display: block; height: 100%; background: var(--blue); border-radius: 99px; transition: width .3s; }
 @media (prefers-reduced-motion: reduce) { .bar span { transition: none; } }
-.stage { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; gap: 14px; min-width: 0; }
+.stage { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
 .stage header small { color: var(--blue); font-weight: 700; }
 .stage h2 { margin: 0; }
 .side { position: sticky; top: 8px; min-width: 0; }
 .pager { border-top: 1px solid var(--line); padding-top: 12px; }
 
-.field { display: grid; gap: 4px; }
+.field { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-width: 0; }
 .lbl { font-weight: 700; }
 .hint { margin: 0; color: var(--muted); font-size: .9rem; }
 .hint code { font-size: .85rem; }
@@ -106,7 +106,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 .dcard span { font-size: .88rem; color: var(--muted); }
 .dcard small { color: var(--muted); }
 .dcard.on { border-color: var(--blue); background: var(--blue-soft); box-shadow: 0 0 0 2px color-mix(in srgb, var(--blue) 25%, transparent); }
-.detail { border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; }
+.detail { border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; }
 .detail details summary { cursor: pointer; color: var(--blue); font-weight: 600; margin-bottom: 8px; }
 .detail .preview { margin-top: 8px; }
 .facts { margin: 0; display: grid; gap: 6px; }
@@ -114,7 +114,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 .facts.wide div { grid-template-columns: 96px 1fr; }
 .facts dt { color: var(--muted); font-weight: 600; }
 .facts dd { margin: 0; }
-.colgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin: 6px 0; max-height: 560px; overflow-y: auto; padding: 4px; }
+.colgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin: 6px 0; padding: 4px; }
 .col { text-align: left; display: grid; gap: 3px; padding: 12px 14px; min-height: 84px; background: var(--card); border: 1.5px solid var(--line); border-radius: 10px; }
 .col code { justify-self: start; }
 .col span { font-size: .92rem; }
@@ -298,9 +298,12 @@ details summary { cursor: pointer; }
 .howto-docs ol { margin: 4px 0; padding-left: 20px; }
 
 /* ---------- 진로 장면(여러 질문)·숫자 예시 ---------- */
-.scenebox { border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 14px; }
+.scenebox { border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 .scenebox h3 { margin: 0; }
 .statex { background: var(--blue-soft); border-radius: 12px; padding: 12px 14px; }
 .statex ul { margin: 6px 0 0; padding-left: 0; list-style: none; display: grid; gap: 4px; }
 .statex li { display: grid; grid-template-columns: 72px 1fr; gap: 8px; font-size: .92rem; }
 .statex li span { color: var(--muted); }
+
+.tablewrap { max-width: 100%; }
+.detail details { min-width: 0; }
