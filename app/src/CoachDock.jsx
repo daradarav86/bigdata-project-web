@@ -1,7 +1,7 @@
 ﻿import { useEffect, useRef, useState } from 'react'
 import { askCoach } from './api.js'
 import { contextOf } from './doc.js'
-import { TEAM_AI } from './store.js'
+import { TEAM_AI, aiTotalOf } from './store.js'
 
 const MAX_CHARS = 800
 const MAX_INPUT_PX = 96
@@ -44,10 +44,10 @@ function Reply({ text }) {
 }
 
 // 코인: 팀이 코치에게 물어볼 수 있는 총 횟수. 보낼 때마다 한 개씩 줄어드는 것이 눈에 보이게 한다.
-function Coins({ left, spent }) {
+function Coins({ left, spent, total }) {
   return (
     <div className="coins" role="img" aria-label={'남은 코인 ' + left + '개'}>
-      {Array.from({ length: TEAM_AI }, (_, i) => (
+      {Array.from({ length: total }, (_, i) => (
         <i key={i} className={(i < left ? '' : 'empty ') + (spent === i ? 'spent' : '')} />
       ))}
       {spent !== null && <b className="minus" aria-hidden="true">−1</b>}
@@ -146,8 +146,8 @@ export default function CoachDock({ mode, game, aiLeft, consumeAi, setChat }) {
 
           <div className={'cw-coins' + (low ? ' low' : '')}>
             <div className="cw-coinrow">
-              <b>우리 팀 코인 {aiLeft}/{TEAM_AI}</b>
-              <Coins left={aiLeft} spent={spent} />
+              <b>우리 팀 코인 {aiLeft}/{aiTotalOf(game)}</b>
+              <Coins left={aiLeft} spent={spent} total={aiTotalOf(game)} />
             </div>
             <p>
               {aiLeft <= 0

@@ -1,0 +1,60 @@
+/* 관리자 화면 (/admindara) 전용. 학생 화면의 색 변수를 그대로 쓴다. */
+.ad { max-width: 1100px; margin: 0 auto; padding: 16px 16px 64px; color: var(--ink); }
+.ad h1 { font-size: 1.3rem; margin: 0; }
+.ad h1 small { font-size: .85rem; font-weight: 500; color: var(--muted); margin-left: 8px; }
+.ad-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.ad-banner { background: var(--blue-soft); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin: 0 0 14px; font-size: .92rem; }
+.ad-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.ad-stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 2px; }
+.ad-stat small { color: var(--muted); }
+.ad-stat b { font-size: 1.5rem; }
+.ad-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+.ad-tools input[type=search] { flex: 1 1 200px; min-width: 0; }
+.ad-tools label { display: flex; align-items: center; gap: 6px; font-size: .9rem; white-space: nowrap; }
+.ad-tools select { width: auto; }
+.ad-btn { display: inline-block; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; min-height: 36px; font: inherit; cursor: pointer; text-decoration: none; }
+.ad-btn:hover:not(:disabled) { border-color: var(--blue); }
+.ad-btn:disabled { opacity: .5; cursor: default; }
+.ad-btn.primary { background: var(--blue); border-color: var(--blue); color: var(--on-blue); font-weight: 600; }
+.ad-btn.danger { border-color: var(--warn); color: var(--warn); font-weight: 600; }
+.ad-tablewrap { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+.ad-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.ad-table th, .ad-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.ad-table th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+.ad-table tr.on { background: var(--blue-soft); }
+.ad-table td small { display: block; color: var(--muted); }
+.ad-table td.warn { color: var(--warn); font-weight: 700; }
+.ad-link { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: var(--blue); cursor: pointer; text-decoration: underline; }
+.ad-bar { width: 110px; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.ad-bar i { display: block; height: 100%; background: var(--blue); }
+.ad-empty { color: var(--muted); padding: 8px 0; }
+.ad-empty.big { text-align: center; padding: 40px 0; background: var(--card); border: 1px dashed var(--line); border-radius: 12px; }
+.ad-detail { margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.ad-dhead { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.ad-dhead h2 { margin: 0; font-size: 1.15rem; }
+.ad-dhead h2 small { color: var(--muted); font-weight: 500; font-size: .85rem; margin-left: 6px; }
+.ad-steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+.ad-steps span { font-size: .8rem; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+.ad-steps span.ok { background: var(--blue-soft); color: var(--blue); border-color: var(--blue); font-weight: 600; }
+.ad-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+.ad-tabs button { background: none; border: 0; padding: 8px 12px; font: inherit; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; }
+.ad-tabs button.on { color: var(--blue); border-bottom-color: var(--blue); font-weight: 700; }
+.ad-note { color: var(--muted); font-size: .9rem; margin: 0 0 8px; }
+.ad-pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: inherit; font-size: .9rem; max-height: 420px; overflow: auto; }
+.ad-list { padding-left: 20px; display: grid; gap: 10px; }
+.ad-list p { margin: 4px 0; }
+.ad-chats { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.ad-chats h3 { margin: 0 0 6px; font-size: 1rem; }
+.ad-msg { margin: 6px 0; padding: 8px 10px; border-radius: 10px; background: var(--bg); overflow-wrap: anywhere; white-space: pre-wrap; }
+.ad-msg.coach { background: var(--blue-soft); }
+.ad-msg b { margin-right: 6px; }
+.ad-manage { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.ad-box { border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.ad-box.danger { border-color: var(--warn); }
+.ad-box h3 { margin: 0 0 6px; font-size: 1rem; }
+.ad-box p { margin: 0 0 8px; color: var(--muted); font-size: .9rem; }
+.ad-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.ad-row label { display: grid; gap: 4px; font-size: .85rem; }
+.ad-row input { width: 130px; }
+.ad-toast { margin: 12px 0 0; padding: 8px 12px; border-radius: 10px; background: var(--blue-soft); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }

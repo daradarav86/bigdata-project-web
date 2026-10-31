@@ -1,0 +1,6 @@
+{
+  "rewrites": [{ "source": "/admindara", "destination": "/index.html" }],
+  "headers": [
+    { "source": "/admindara", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] }
+  ]
+}

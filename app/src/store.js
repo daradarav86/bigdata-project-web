@@ -24,20 +24,28 @@ export const START = {
   rowMeaning: '', usedCols: [],
   missingMethod: '', missingWhy: '', newCol: '', codeDesign: '',
   deck: {}, // 발표 슬라이드 입력 (결과·해석·진로 연결·Q&A 등)
-  ai: { used: 0 }, chats: { plan: [], code: [] }, // 코치 코인(지금까지 쓴 횟수)과 대화 기록
+  ai: { used: 0, bonus: 0 }, chats: { plan: [], code: [] }, // 코치 코인: 지금까지 쓴 횟수, 선생님이 더 준 개수 / 대화 기록
+  updatedAt: 0, // 마지막으로 고친 시각 (관리자 화면에서 "언제 마지막으로 했는지" 보려고)
 }
 
 // 새로 생긴 항목이 없는 예전 기록도 열리도록 기본값을 채운다
 function withDefaults(g) {
-  const out = { ...START, ...g }
+  const out = { ...START, ...g, ai: { ...START.ai, ...g.ai } }
   if (!g.concernParts && g.concern) out.concernParts = [g.concern, ''] // 예전에 한 칸으로 쓴 고민을 첫 번째 칸으로
   return out
 }
+
+export const aiTotalOf = g => TEAM_AI + (g.ai?.bonus || 0)
 
 const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('')
 const newSalt = () => hex(crypto.getRandomValues(new Uint8Array(8)))
 async function hashPass(salt, pass) {
   return hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${salt}:${pass}`)))
+}
+// 새 비밀번호의 salt와 hash (팀 만들기·관리자의 비밀번호 초기화에서 쓴다)
+export async function makeCred(pass) {
+  const salt = newSalt()
+  return { salt, hash: await hashPass(salt, pass) }
 }
 
 // 프로토타입: 이 기기의 브라우저에만 저장한다. 비밀번호도 이 기기 안에서만 확인된다.
@@ -45,7 +53,9 @@ async function hashPass(salt, pass) {
 // 팀 기록은 브라우저(localStorage)에 모아 두고, "지금 이 탭에서 들어가 있는 팀"은 탭마다 따로(sessionStorage) 기억한다.
 // → 공용 컴퓨터에서 탭을 닫으면 로그아웃되고, 탭 두 개로 서로 다른 팀을 써도 섞이지 않는다.
 const CUR_KEY = 'data-detective-current'
-const readTeams = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}').teams ?? {} } catch { return {} } }
+export const readTeams = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}').teams ?? {} } catch { return {} } }
+export const writeTeams = teams => { try { localStorage.setItem(KEY, JSON.stringify({ teams })); return true } catch { return false } }
+export { withDefaults }
 const readCurrent = () => { try { return sessionStorage.getItem(CUR_KEY) ?? '' } catch { return '' } }
 const load = () => ({ current: readCurrent(), teams: readTeams() })
 
@@ -72,7 +82,7 @@ export function useGame() {
     const t = s.teams[s.current]
     if (!t) return s
     const cur = withDefaults(t.game)
-    const next = { ...cur, ...(typeof p === 'function' ? p(cur) : p) }
+    const next = { ...cur, ...(typeof p === 'function' ? p(cur) : p), updatedAt: Date.now() }
     return { ...s, teams: { ...s.teams, [s.current]: { ...t, game: next } } }
   })
   const setDeck = p => patch(g => ({ deck: { ...g.deck, ...p } }))
@@ -80,10 +90,11 @@ export function useGame() {
   const setMember = (i, p) => patch(g => ({ members: g.members.map((m, j) => (j === i ? { ...m, ...p } : m)) }))
 
   // 코인은 팀당 총 TEAM_AI번. 날짜로 다시 채워지지 않는다 (더 필요하면 선생님이 정한다).
-  const aiLeft = Math.max(0, TEAM_AI - game.ai.used)
+  const aiTotal = aiTotalOf(game)
+  const aiLeft = Math.max(0, aiTotal - game.ai.used)
   // remaining: 서버가 알려 준 남은 횟수가 있으면 그것을 따른다 (기기가 달라도 맞도록)
   const consumeAi = remaining => patch(g => ({
-    ai: { used: Number.isInteger(remaining) ? TEAM_AI - remaining : g.ai.used + 1 },
+    ai: { ...g.ai, used: Number.isInteger(remaining) ? aiTotalOf(g) - remaining : g.ai.used + 1 },
   }))
   const setChat = (mode, msgs) => patch(g => ({ chats: { ...g.chats, [mode]: msgs.slice(-20) } }))
 
@@ -115,5 +126,5 @@ export function useGame() {
     return { current: '', teams: rest }
   })
 
-  return { game, patch, setDeck, setSize, setMember, aiLeft, consumeAi, setChat, current: team ? state.current : '', teamNames: Object.keys(state.teams), createTeam, joinTeam, logout, removeTeam }
+  return { game, patch, setDeck, setSize, setMember, aiLeft, aiTotal, consumeAi, setChat, current: team ? state.current : '', teamNames: Object.keys(state.teams), createTeam, joinTeam, logout, removeTeam }
 }
