@@ -26,6 +26,9 @@ function parseCsv(text) {
   return rows.filter(r => r.length > 1 || r[0] !== '')
 }
 
+// 수업 용어: 데이터의 "빈칸"은 "결측값(NaN)"이라고 쓴다 (원본 저장소 문서는 그대로 두고 이 사이트용 데이터에서만 바꾼다)
+const nan = s => (s == null ? s : s.replace(/빈칸은 결측/g, '결측값(NaN)').replace(/빈칸/g, '결측값(NaN)'))
+
 const cells = line => line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(s => s.trim())
 const strip = s => s.replace(/`/g, '').trim()
 const list = s => s.split(',').map(x => strip(x)).filter(Boolean)
@@ -59,7 +62,7 @@ function readMeanings(id) {
   const out = {}
   for (const l of fs.readFileSync(file, 'utf8').split('\n')) {
     const m = l.match(/^\|\s*`([^`]+)`\s*\|\s*(.+?)\s*\|?\s*$/)
-    if (m) out[m[1].trim()] = m[2].replace(/\|\s*$/, '').trim()
+    if (m) out[m[1].trim()] = nan(m[2].replace(/\|\s*$/, '').trim())
   }
   return out
 }
@@ -82,6 +85,7 @@ for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.csv') && !skip.h
   result.push({
     id, rows: body.length, columns,
     ...info[id],
+    desc: nan(info[id]?.desc), prep: nan(info[id]?.prep), example: nan(info[id]?.example),
     pair: pairs[id] ?? null,
     preview: body.slice(0, 5).map(r => r.map(v => (v.length > 24 ? v.slice(0, 24) + '…' : v))),
     header,

@@ -131,7 +131,7 @@ export function buildPlanText(g) {
   L.push('## 2. 사용할 데이터', `파일: ${ds ? ds.id + '.csv' : ''}`, `한 행: ${g.rowMeaning}`, ds ? `행 × 열: ${ds.rows}행 × ${ds.columns.length}열` : '')
   L.push('사용할 열:'); g.usedCols.forEach(u => L.push(`- ${u.name}: ${u.meaning}`)); L.push('')
   L.push('## 3. 분석 계획', `우리 팀은 ${ds ? ds.id : '___'} 데이터에서 ${g.groupBy}(으)로 묶어 ${isFreq(g) ? '개수(빈도)를' : `${g.measure}의 ${s.obj}`} 비교하고, ${c.short}그래프로 나타냅니다.`)
-  L.push(`① 묶는 기준: ${g.groupBy}`, `② 계산할 것: ${isFreq(g) ? '빈도(그룹별 개수)' : g.measure}`, `③ 통계: ${isFreq(g) ? '개수(count / value_counts)' : s.fn}`, `④ 빈칸 처리: ${mm ? mm.ko : ''} — ${g.missingWhy}`, `⑤ 그래프: ${c.ko}`, `⑥ 새 열: ${g.newCol || '이번에는 만들지 않음'}`)
+  L.push(`① 묶는 기준: ${g.groupBy}`, `② 계산할 것: ${isFreq(g) ? '빈도(그룹별 개수)' : g.measure}`, `③ 통계: ${isFreq(g) ? '개수(count / value_counts)' : s.fn}`, `④ 결측값(NaN) 처리: ${mm ? mm.ko : ''} — ${g.missingWhy}`, `⑤ 그래프: ${c.ko}`, `⑥ 새 열: ${g.newCol || '이번에는 만들지 않음'}`)
   if (g.extraCompare.trim()) L.push(`⑧ 더 비교해 보고 싶은 것: ${g.extraCompare}`)
   L.push('코드 설계:', g.codeDesign, '')
   return L.join('\n')
@@ -147,7 +147,7 @@ export function buildCodeMemo(g) {
     `# 데이터: ${ds ? ds.id + '.csv' : '(아직 없음)'}`,
     `# 묶는 기준: ${g.groupBy || '(아직 없음)'}`,
     `# 계산할 것: ${isFreq(g) ? '빈도(그룹별 개수) → value_counts()' : `${g.measure || '(아직 없음)'}의 ${s.ko} → ${s.fn}`}`,
-    `# 빈칸 처리: ${mm ? mm.ko : '(아직 없음)'}${g.missingWhy ? ' — ' + g.missingWhy : ''}`,
+    `# 결측값(NaN) 처리: ${mm ? mm.ko : '(아직 없음)'}${g.missingWhy ? ' — ' + g.missingWhy : ''}`,
     `# 그래프: ${c.ko}`,
   ]
   if (g.newCol.trim()) lines.push(`# 새 열: ${g.newCol}`)

@@ -93,7 +93,7 @@ function slides({ g, d, ds }) {
           <p>② 두 집단의 차이는 <V v={d.diffPts && `${d.diffPts}점`} />이다.</p>
           <p>③ 이는 <V v={d.m1 || g.groupBy} />와(과) <V v={d.m2 || measureName(g)} />가 함께 움직이는 경향을 보여 준다.</p>
           <p>한계: 다만 <V v={d.limit} ph="이유" /> 때문에 이 결과를 모든 대상에게 일반화하기 어렵다.</p>
-          <p className="small">빈칸 처리 비교: 원본 <V v={d.orig} /> / 제거 <V v={d.rem} />(<V v={d.remRows} />행) / 대체 <V v={d.rep} /> → <V v={missingOf(g.missingMethod)?.ko} />, 이유: <V v={g.missingWhy} /></p>
+          <p className="small">결측값(NaN) 처리 비교: 원본 <V v={d.orig} /> / 제거 <V v={d.rem} />(<V v={d.remRows} />행) / 대체 <V v={d.rep} /> → <V v={missingOf(g.missingMethod)?.ko} />, 이유: <V v={g.missingWhy} /></p>
         </>
       ),
       fields: ['m1', 'm2', 'limit', 'orig', 'rem', 'remRows', 'rep'],
@@ -144,7 +144,7 @@ const FIELD = {
   m1: ['③ 함께 움직이는 것 (앞)', '비워 두면 묶는 기준이 들어가요'],
   m2: ['③ 함께 움직이는 것 (뒤)', '비워 두면 계산할 열이 들어가요'],
   limit: ['한계: 일반화하기 어려운 이유', '아래 후보를 눌러 가져올 수 있어요'],
-  orig: ['빈칸 처리 비교: 원본 평균', ''],
+  orig: ['결측값(NaN) 처리 비교: 원본 평균', ''],
   rem: ['제거했을 때 평균', ''],
   remRows: ['제거 후 행 수', ''],
   rep: ['대체했을 때 평균', ''],

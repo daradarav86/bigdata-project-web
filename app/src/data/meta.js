@@ -18,7 +18,7 @@ export const STATS = [
   { id: 'median', ko: '중앙값', topic: '중앙값은', obj: '중앙값을', fn: 'median()', desc: '크기순으로 놓았을 때 가운데 값. 아주 큰·작은 값의 영향이 적어요' },
   { id: 'max', ko: '최댓값', topic: '최댓값은', obj: '최댓값을', fn: 'max()', desc: '가장 큰 값' },
   { id: 'min', ko: '최솟값', topic: '최솟값은', obj: '최솟값을', fn: 'min()', desc: '가장 작은 값' },
-  { id: 'count', ko: '개수', topic: '개수는', obj: '개수를', fn: 'count()', desc: '몇 개인지 (빈칸은 빼고 세요)' },
+  { id: 'count', ko: '개수', topic: '개수는', obj: '개수를', fn: 'count()', desc: '몇 개인지 (결측값(NaN)은 빼고 세요)' },
 ]
 
 // 그래프 종류. tokens: 코드 설계에 이 글자가 들어 있으면 그 그래프를 쓴 것으로 본다.
@@ -33,17 +33,17 @@ export const CHARTS = [
 
 export const KIND_LABEL = { number: '숫자', group: '묶는 열', text: '글자(값 많음)' }
 
-// 빈칸 처리 3가지 (기획안 3-2 ④)
+// 결측값(NaN) 처리 3가지 (기획안 3-2 ④)
 export const MISSING = [
-  { id: 'keep', ko: '그대로 두기', guide: '빈칸이 적고(약 5% 이하) 분석 열이 아니면. groupby 평균은 빈칸을 건너뛰어요.' },
-  { id: 'drop', ko: '제거 (dropna)', guide: '분석에 쓰는 열인데 빈칸 행을 빼도 괜찮으면. shape로 줄어든 행 수를 기록해요.' },
+  { id: 'keep', ko: '그대로 두기', guide: '결측값(NaN)이 적고(약 5% 이하) 분석 열이 아니면. groupby 평균은 결측값을 건너뛰어요.' },
+  { id: 'drop', ko: '제거 (dropna)', guide: '분석에 쓰는 열인데 결측값이 있는 행을 빼도 괜찮으면. shape로 줄어든 행 수를 기록해요.' },
   { id: 'fill', ko: '대체 (fillna)', guide: '채울 근거가 있을 때만. 0이나 평균으로 성급히 채우지 않아요.' },
 ]
 
 export const LIMITS = [
   '한 데이터의 표본이라 모든 대상에게 일반화하기 어렵다.',
   '평균만 비교해서 개인차를 알 수 없다.',
-  '빈칸을 처리한 방법에 따라 결과가 달라질 수 있다.',
+  '결측값(NaN)을 처리한 방법에 따라 결과가 달라질 수 있다.',
   '다른 요인을 함께 보지 못했다.',
   '인과관계는 알 수 없다.',
 ]

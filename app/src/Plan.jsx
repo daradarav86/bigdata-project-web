@@ -9,12 +9,12 @@ import { exportPlanDocx } from './exportDoc.js'
 const dsName = d => `${d.field} · ${d.desc}`
 const tokens = s => s.split(/[\s,·/()]+/).filter(t => t.length >= 2)
 
-/* ---------- 열 목록 (뜻·종류·빈칸) ---------- */
+/* ---------- 열 목록 (뜻·종류·결측값) ---------- */
 function ColTable({ ds }) {
   return (
     <div className="tablewrap">
       <table>
-        <thead><tr><th>열 이름</th><th>뜻</th><th>종류</th><th>빈칸</th></tr></thead>
+        <thead><tr><th>열 이름</th><th>뜻</th><th>종류</th><th>결측값(NaN)</th></tr></thead>
         <tbody>
           {ds.columns.map(c => (
             <tr key={c.name}>
@@ -45,7 +45,7 @@ function ColPicker({ label, hint, ds, value, onPick, kinds, warn }) {
           <button key={c.name} role="radio" aria-checked={value === c.name} className={`col ${value === c.name ? 'on' : ''}`} onClick={() => onPick(c.name)}>
             <code>{c.name}</code>
             <span>{c.meaning}</span>
-            <small>{KIND_LABEL[c.kind]}{c.kind === 'group' ? ` · ${c.unique}개 값` : ''}{c.missing ? ` · 빈칸 ${c.missing}` : ''}</small>
+            <small>{KIND_LABEL[c.kind]}{c.kind === 'group' ? ` · ${c.unique}개 값` : ''}{c.missing ? ` · 결측값 ${c.missing}` : ''}</small>
           </button>
         ))}
         {list.length === 0 && <p className="muted">알맞은 열이 없어요. 아래 "모든 열 보기"를 눌러 보세요.</p>}
@@ -153,7 +153,7 @@ function DataStep({ game, patch, go }) {
             <div className="tablewrap preview">
               <table>
                 <thead><tr>{ds.header.map(h => <th key={h}>{h}</th>)}</tr></thead>
-                <tbody>{ds.preview.map((r, i) => <tr key={i}>{r.map((v, j) => <td key={j}>{v || <span className="muted">(빈칸)</span>}</td>)}</tr>)}</tbody>
+                <tbody>{ds.preview.map((r, i) => <tr key={i}>{r.map((v, j) => <td key={j}>{v || <span className="muted">(NaN)</span>}</td>)}</tr>)}</tbody>
               </table>
             </div>
           </details>
@@ -247,7 +247,7 @@ function QuestionStep({ game, patch, go }) {
         <>
           <ColPicker label="계산할 열" ds={ds} value={game.measure} kinds={['number']} onPick={v => patch({ measure: v })}
             hint="숫자 열(점수, 길이, 금액 …)만 가능해요."
-            warn={c => (c.kind !== 'number' ? '숫자 열이 아니면 통계를 낼 수 없어요. info()의 Dtype을 확인해요.' : c.missing / ds.rows > 0.05 ? `빈칸이 ${c.missing}개(${pct(c.missing, ds.rows)}%)로 많은 편이에요. 빈칸 처리를 꼭 생각해요.` : '')} />
+            warn={c => (c.kind !== 'number' ? '숫자 열이 아니면 통계를 낼 수 없어요. info()의 Dtype을 확인해요.' : c.missing / ds.rows > 0.05 ? `결측값(NaN)이 ${c.missing}개(${pct(c.missing, ds.rows)}%)로 많은 편이에요. 결측값(NaN) 처리를 꼭 생각해요.` : '')} />
           <Seg label="③ 통계 (수업에서 배운 것)" value={game.stat} onChange={v => patch({ stat: v })}
             options={[...STATS.map(s => ({ id: s.id, ko: s.ko, desc: s.desc })), { id: 'etc', ko: '기타', desc: '위에 없는 통계를 더 비교하고 싶으면 직접 써요' }]} />
           {game.stat === 'etc' && (
@@ -353,7 +353,7 @@ function UnderstandStep({ game, patch, go }) {
       <dl className="facts wide">
         <div><dt>파일 이름</dt><dd><code>{ds.id}.csv</code></dd></div>
         <div><dt>행 × 열 (shape)</dt><dd>{ds.rows.toLocaleString()}행 × {ds.columns.length}열</dd></div>
-        <div><dt>빈칸이 있는 열</dt><dd>{blanks.length ? blanks.map(c => `${c.name} ${c.missing}개`).join(', ') : '없음'}</dd></div>
+        <div><dt>결측값이 있는 열</dt><dd>{blanks.length ? blanks.map(c => `${c.name} ${c.missing}개`).join(', ') : '없음'}</dd></div>
       </dl>
       <Text label="한 행은 무엇을 뜻하나요?" value={game.rowMeaning} max={60} onChange={v => patch({ rowMeaning: v })} hint="예) 학생 1명의 기록 1건 / 영화 1편 / 팀의 한 시즌" />
       <div className="field">
@@ -365,7 +365,7 @@ function UnderstandStep({ game, patch, go }) {
             const on = used.some(u => u.name === c.name)
             return (
               <button key={c.name} aria-pressed={on} className={`col ${on ? 'on' : ''}`} onClick={() => toggle(c)}>
-                <code>{c.name}</code><span>{c.meaning}</span><small>{KIND_LABEL[c.kind]}{c.missing ? ` · 빈칸 ${c.missing}` : ''}</small>
+                <code>{c.name}</code><span>{c.meaning}</span><small>{KIND_LABEL[c.kind]}{c.missing ? ` · 결측값 ${c.missing}` : ''}</small>
               </button>
             )
           })}
@@ -389,7 +389,7 @@ function MethodStep({ game, patch, go }) {
   const ch = chartFor(game)
   const mc = getCol(ds, game.measure)
   const gc = getCol(ds, game.groupBy)
-  const missCol = mc ?? gc // 빈칸 처리를 살펴볼 중심 열 (빈도 모드에서는 묶는 기준)
+  const missCol = mc ?? gc // 결측값(NaN) 처리를 살펴볼 중심 열 (빈도 모드에서는 묶는 기준)
   const checks = checkCodeDesign(game)
   return (
     <>
@@ -402,11 +402,11 @@ function MethodStep({ game, patch, go }) {
       </div>
       <p className="hint">① ② ③ ⑤는 앞 단계에서 정했어요. 바꾸려면 "열 고르고 질문 만들기"로 돌아가요.</p>
 
-      <Seg label="④ 빈칸 처리" value={game.missingMethod} onChange={v => patch({ missingMethod: v })} options={MISSING.map(m => ({ id: m.id, ko: m.ko, desc: m.guide }))}
-        hint={`${isFreq(game) ? '' : `계산할 열 ${game.measure}: 빈칸 ${mc.missing}개(전체의 약 ${pct(mc.missing, ds.rows)}%) · `}묶는 기준 ${game.groupBy}: 빈칸 ${gc.missing}개 — 노트북 isnull().sum()으로 다시 확인해요.`} />
+      <Seg label="④ 결측값(NaN) 처리" value={game.missingMethod} onChange={v => patch({ missingMethod: v })} options={MISSING.map(m => ({ id: m.id, ko: m.ko, desc: m.guide }))}
+        hint={`${isFreq(game) ? '' : `계산할 열 ${game.measure}: 결측값 ${mc.missing}개(전체의 약 ${pct(mc.missing, ds.rows)}%) · `}묶는 기준 ${game.groupBy}: 결측값 ${gc.missing}개 — 노트북 isnull().sum()으로 다시 확인해요.`} />
       <Text label="그렇게 정한 이유" rows={3} value={game.missingWhy} onChange={v => patch({ missingWhy: v })}
         hint="제거했다면 행 수 변화(처음 ___행 → ___행)도 써요. 어려우면 아래 문장 틀로 시작해요."
-        frame={[{ key: 'c', ph: '열 이름', def: missCol.name }, ' 열은 빈칸이 ', { key: 'n', ph: '개수', def: String(missCol.missing) }, '개(전체의 약 ', { key: 'p', ph: '%', def: String(pct(missCol.missing, ds.rows)) }, '%)뿐이라서 ', { key: 'm', ph: '그대로 두었다/제거했다/채웠다', def: missingOf(game.missingMethod)?.ko.replace(/ \(.*\)/, '') }, '.']} />
+        frame={[{ key: 'c', ph: '열 이름', def: missCol.name }, ' 열은 결측값(NaN)이 ', { key: 'n', ph: '개수', def: String(missCol.missing) }, '개(전체의 약 ', { key: 'p', ph: '%', def: String(pct(missCol.missing, ds.rows)) }, '%)뿐이라서 ', { key: 'm', ph: '그대로 두었다/제거했다/채웠다', def: missingOf(game.missingMethod)?.ko.replace(/ \(.*\)/, '') }, '.']} />
       <Text label="⑥ 새 열 (선택)" value={game.newCol} onChange={v => patch({ newCol: v })} max={80}
         hint={ds.pair?.newCol ? `추천 아이디어: ${ds.pair.newCol}` : '기존 열을 계산해 새 열을 만들 수 있어요. 이번에 안 만들면 비워 둬요.'} />
 
@@ -423,7 +423,7 @@ function MethodStep({ game, patch, go }) {
       </div>
       <div className="mission">
         <b>3-4. 필수 미션</b>
-        <span>미션 1 데이터 구조 확인</span><span>미션 2 빈칸 확인·처리</span><span>미션 3 그룹별 통계 1개</span><span>미션 4 그래프 1개</span><span>해석 2문장 + 한계 1문장</span>
+        <span>미션 1 데이터 구조 확인</span><span>미션 2 결측값(NaN) 확인·처리</span><span>미션 3 그룹별 통계 1개</span><span>미션 4 그래프 1개</span><span>해석 2문장 + 한계 1문장</span>
       </div>
     </>
   )
@@ -477,7 +477,7 @@ const STUCK = {
   scene: [['세 질문에 답하기 어려워요', '그 직업의 하루를 상상해 보세요. 어떤 선택을 해야 할 때 "숫자로 알면 좋겠다"는 생각이 들까요?']],
   question: [['어떤 열을 골라야 할지 모르겠어요', '선생님 추천 짝부터 시작해 보세요. 열의 뜻을 읽고 STEP 3에서 쓴 ②(집단)와 ③(숫자)에 맞는 열을 찾으면 돼요.'], ['질문이 너무 넓어요', '"무엇으로 묶고, 어떤 숫자를 비교할지" 한 쌍으로 줄여요.'], ['점검표 ○가 안 없어져요', '고른 열 이름이 질문 문장에 그대로 들어가야 해요. 초안 가져오기를 눌러 확인해 보세요.']],
   understand: [['열 뜻이 어려워요', '데이터 고르기 단계의 "열 목록" 뜻을 읽어 보세요. 우리 말로 쉽게 바꿔 써도 돼요.']],
-  method: [['빈칸 처리를 무엇으로 해야 할지 모르겠어요', '빈칸이 5% 이하이고 계산할 열이 아니면 "그대로 두기"가 무난해요. 확신이 없으면 이유를 솔직하게 쓰면 돼요.'], ['코드 설계 점검이 계속 ○예요', '틀의 괄호를 우리가 고른 열 이름·함수 이름으로 바꿔 썼는지 확인해요. 따옴표 안에 열 이름이 정확히 들어가야 해요.']],
+  method: [['결측값(NaN) 처리를 무엇으로 해야 할지 모르겠어요', '결측값(NaN)이 5% 이하이고 계산할 열이 아니면 "그대로 두기"가 무난해요. 확신이 없으면 이유를 솔직하게 쓰면 돼요.'], ['코드 설계 점검이 계속 ○예요', '틀의 괄호를 우리가 고른 열 이름·함수 이름으로 바꿔 썼는지 확인해요. 따옴표 안에 열 이름이 정확히 들어가야 해요.']],
   summary: [['빠진 단계가 있어요', '위의 "아직 덜 쓴 단계"를 눌러 이동해요.']],
 }
 
