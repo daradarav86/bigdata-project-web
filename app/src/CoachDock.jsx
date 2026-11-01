@@ -56,7 +56,7 @@ function Coins({ left, spent, total }) {
 }
 
 // 오른쪽 아래의 작은 채팅 상담 버튼. 누르면 작은 채팅 창이 열린다.
-export default function CoachDock({ mode, game, token, coachOn = true, aiLeft, consumeAi, setChat }) {
+export default function CoachDock({ mode, game, token, onOpen, coachOn = true, aiLeft, consumeAi, setChat }) {
   const msgs = game.chats[mode]
   const [open, setOpen] = useState(readOpen)
   const [text, setText] = useState('')
@@ -73,6 +73,7 @@ export default function CoachDock({ mode, game, token, coachOn = true, aiLeft, c
 
   const toggle = v => {
     setOpen(v)
+    if (v) onOpen?.() // 열 때 코인·코치 설정을 다시 확인한다 (선생님이 코인을 더 줬을 수 있다)
     try { localStorage.setItem(OPEN_KEY, v ? '1' : '0') } catch { /* 저장 불가 환경 */ }
   }
 

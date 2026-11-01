@@ -96,7 +96,7 @@ export default function Code({ game, setDeck }) {
   const topic = TOPICS.find(t => t.id === id)
   return (
     <div className="stack">
-      <TabIntro>코드는 Colab 노트북에서 실행해요. 이 탭에서는 우리 팀의 설계를 노트북으로 가져가고, 막히면 ① 막힌 부분을 고르고 → ② 힌트를 1단계부터 읽고 → ③ 오류 메시지는 해독기에 붙여 넣고 → ④ 그래도 안 되면 오른쪽 아래 코치에게 물어요.</TabIntro>
+      <TabIntro>코드는 Colab 노트북에서 실행해요. 이 탭에서는 우리 팀의 설계를 노트북으로 가져가고, 막히면 ① 막힌 부분을 고르고 → ② 힌트를 1단계부터 읽고 → ③ 오류 메시지는 해독기에 붙여 넣고 → ④ 그래도 안 되면 오른쪽 아래 코치에게 물어요. 결과가 나오면 맨 아래 <b>"분석 결과 정리"</b>에 적어요(기획안 4번, 발표 슬라이드에 그대로 들어가요).</TabIntro>
       <section className="panel">
         <h3>Colab 노트북 열기</h3>
         <p className="hint">수업에서 계속 써 온 프로젝트 노트북이 있으면 그걸 열어요. 새로 시작해야 하면 아래 템플릿을 열고 <b>"Drive에 사본 저장"</b>을 눌러 우리 팀 노트북을 만들어요.</p>

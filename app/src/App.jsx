@@ -59,9 +59,10 @@ export default function App() {
         {TABS.map(([id, label, sub]) => {
           const locked = !phase.open.includes(id)
           return (
-            <button key={id} className={(tab === id ? 'on' : '') + (locked ? ' locked' : '')} aria-current={tab === id ? 'page' : undefined} disabled={locked} onClick={() => setTab(id)}>
+            // 탭을 누를 때 선생님 설정을 다시 확인한다 (주기적으로 묻지 않으므로). 잠긴 탭도 눌러서 확인할 수 있게 disabled로 두지 않는다
+            <button key={id} className={(tab === id ? 'on' : '') + (locked ? ' locked' : '')} aria-current={tab === id ? 'page' : undefined} aria-disabled={locked} onClick={() => { g.refresh(); setTab(id) }}>
               {locked ? '🔒 ' : ''}{label}
-              <small>{locked ? '선생님이 아직 열지 않았어요' : id === phase.tab && cs.phase !== 'deck' ? '지금 할 일' : id === 'plan' ? `${done}/${PLAN_STEPS.length} 단계 완료` : sub}</small>
+              <small>{locked ? '아직 잠겨 있어요 · 선생님이 열면 다시 눌러요' : id === phase.tab && cs.phase !== 'deck' ? '지금 할 일' : id === 'plan' ? `${done}/${PLAN_STEPS.length} 단계 완료` : sub}</small>
             </button>
           )
         })}
@@ -73,7 +74,7 @@ export default function App() {
           {tab === 'deck' && <Deck {...g} game={game} go={setTab} />}
         </ErrorBoundary>
       </main>
-      {dock && <CoachDock mode={tab} game={game} token={g.token} coachOn={cs.coach} aiLeft={g.aiLeft} consumeAi={g.consumeAi} setChat={g.setChat} />}
+      {dock && <CoachDock mode={tab} game={game} token={g.token} onOpen={g.refresh} coachOn={cs.coach} aiLeft={g.aiLeft} consumeAi={g.consumeAi} setChat={g.setChat} />}
     </div>
   )
 }

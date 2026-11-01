@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { LIMITS } from './data/meta.js'
 import { missingOf, statFor, isFreq, measureName } from './doc.js'
-import { FIELD, shrink } from './deckFields.js'
+import { FIELD, shrink, resultDone, RESULT_KEYS } from './deckFields.js'
 import { Text } from './ui.jsx'
 import { josa } from './josa.js'
 
@@ -11,7 +11,7 @@ export default function Results({ game, setDeck }) {
   const d = game.deck
   const [err, setErr] = useState('')
   const field = (k, rows) => (
-    <Text key={k} label={FIELD[k][0]} hint={FIELD[k][1]} value={d[k] ?? ''} rows={rows} max={rows ? 600 : 80} onChange={v => setDeck({ [k]: v })} />
+    <Text key={k} label={FIELD[k][0]} hint={FIELD[k][1]} value={d[k] ?? ''} rows={rows} max={rows ? 2000 : 80} onChange={v => setDeck({ [k]: v })} />
   )
   const load = async file => {
     setErr('')
@@ -23,11 +23,11 @@ export default function Results({ game, setDeck }) {
   }
   const mm = missingOf(game.missingMethod)
   const s = statFor(game)
-  const done = ['resultTable', 'hi', 'graph', 'limit', 'use'].filter(k => String(d[k] ?? '').trim()).length
+  const done = resultDone(d)
 
   return (
     <section className="panel results" onPaste={onPaste} aria-label="분석 결과 정리">
-      <h3>분석 결과 정리 <small className="muted">기획안 4번 · 노트북 결과를 보며 적어요 ({done}/5)</small></h3>
+      <h3>분석 결과 정리 <small className="muted">기획안 4번 · 노트북 결과를 보며 적어요 ({done}/{RESULT_KEYS.length})</small></h3>
       <p className="hint">여기 적은 결과는 발표 슬라이드(4~6장)에 그대로 들어가요. 숫자는 노트북 결과에서 그대로 옮겨 적어요.</p>
 
       <h4>4-1. 결측값(NaN) 처리</h4>

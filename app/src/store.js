@@ -48,9 +48,10 @@ export const aiTotalOf = g => TEAM_AI + (g.ai?.bonus || 0)
 const TOKEN_KEY = 'data-detective-token'
 const LAST_KEY = 'data-detective-last'
 const SAVE_MS = 1000 // 고친 뒤 이만큼 쉬면 저장한다
-// 이 간격으로 같은 팀의 다른 기기에서 고친 것과 선생님 설정을 받아 온다.
-// 실시간일 필요는 없고 여러 차시 동안 서버 무료 한도 안에서 오래 버티는 게 중요해서 30초로 둔다. 화면을 보고 있지 않은 탭은 받지 않는다.
-const SYNC_MS = 30000
+// 주기적으로 서버에 묻지 않는다 (실시간일 필요가 없고, 여러 차시 동안 서버 무료 한도 안에서 오래 버티는 게 중요하다).
+// 같은 팀의 다른 기기에서 고친 것·선생님 설정·코인은 이럴 때만 받아 온다:
+// 들어올 때, 이 화면으로 돌아올 때, 기획/코드/발표 탭을 누를 때, 코치 창을 열 때 (App.jsx, CoachDock.jsx의 refresh)
+const REFRESH_GAP_MS = 5000 // 탭을 연달아 눌러도 이 간격 안에서는 한 번만 묻는다
 const NESTED = ['deck', 'chats', 'dataQA'] // 이 항목은 안쪽 칸 단위로 저장한다 (팀원이 서로 다른 칸을 동시에 고쳐도 덮어쓰지 않게)
 const NESTED_LIST = ['members'] // 팀원 목록은 사람(번호) 단위로 저장한다 (각자 기기에서 자기 진로를 동시에 써도 덮어쓰지 않게)
 
@@ -185,16 +186,22 @@ export function useGame() {
     return () => { stop = true }
   }, [enter, leave])
 
-  // 들어가 있는 동안: 주기적으로, 그리고 화면으로 돌아올 때 받아 온다. 화면을 떠날 때는 남은 변경을 보낸다.
+  // 학생이 무언가 할 때(탭 누르기, 코치 열기, 화면으로 돌아오기)만 받아 온다. 짧은 시간에 여러 번 불려도 한 번만 묻는다.
+  const lastRefresh = useRef(0)
+  const refresh = useCallback(() => {
+    if (Date.now() - lastRefresh.current < REFRESH_GAP_MS) return
+    lastRefresh.current = Date.now()
+    sync()
+  }, [sync])
+
+  // 들어가 있는 동안: 이 화면으로 돌아올 때 받아 오고, 화면을 떠날 때는 남은 변경을 보낸다. (주기적으로 묻지 않는다)
   useEffect(() => {
     if (!s.token) return undefined
-    // 화면을 보고 있는 탭만 받아 온다 (켜 둔 채 다른 일을 하는 탭이 서버를 계속 부르지 않게)
-    const id = setInterval(() => { if (document.visibilityState === 'visible') sync() }, SYNC_MS)
-    const onVis = () => { if (document.visibilityState === 'visible') sync(); else flush() }
+    const onVis = () => { if (document.visibilityState === 'visible') refresh(); else flush() }
     document.addEventListener('visibilitychange', onVis)
     window.addEventListener('pagehide', flush)
-    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('pagehide', flush) }
-  }, [s.token, sync, flush])
+    return () => { document.removeEventListener('visibilitychange', onVis); window.removeEventListener('pagehide', flush) }
+  }, [s.token, refresh, flush])
 
   const game = s.game ? { ...s.game, ai: s.ai } : START
 
@@ -247,7 +254,7 @@ export function useGame() {
 
   return {
     game, patch, setDeck, setSize, setMember, aiLeft, aiTotal, consumeAi, setChat,
-    current: s.game ? s.game.team : '', token: s.token, settings: s.settings, loading, saveState, notice,
+    current: s.game ? s.game.team : '', token: s.token, settings: s.settings, loading, saveState, notice, refresh,
     lastTeam: readLast(), server: SERVER, createTeam, joinTeam, logout, removeTeam,
   }
 }

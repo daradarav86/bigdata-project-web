@@ -52,3 +52,7 @@ export function shrink(file, max = 1000) {
     img.src = url
   })
 }
+
+// 2차시 "분석 결과 정리"를 얼마나 했는지 셀 때 보는 칸 (결과표, 가장 큰 그룹, 그래프, 한계, 진로 연결)
+export const RESULT_KEYS = ['resultTable', 'hi', 'graph', 'limit', 'use']
+export const resultDone = deck => RESULT_KEYS.filter(k => String(deck?.[k] ?? '').trim()).length

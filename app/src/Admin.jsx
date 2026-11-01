@@ -4,6 +4,7 @@ import { PLAN_STEPS, stepDone, buildPlanText, reviewState, measureName } from '.
 import { getDs } from './data/meta.js'
 import { CLASSES, PHASES, settingsOf } from './classSettings.js'
 import { backend, SERVER } from './backend.js'
+import { resultDone, RESULT_KEYS } from './deckFields.js'
 import './App.css' // 색 변수(:root)를 학생 화면과 같이 쓴다
 import './admin.css'
 
@@ -40,6 +41,7 @@ function summarize({ key: name, game, ai }) {
     dataset: g.dataset || '-',
     coinsUsed: g.ai.used, coinsTotal: total, coinsLeft: Math.max(0, total - g.ai.used),
     reviews: g.reviews.length,
+    results: resultDone(g.deck), // 2차시 분석 결과 정리를 몇 칸 썼는지
     updatedAt: g.updatedAt,
     members: g.members.map(m => m.name).filter(Boolean).join(', '),
   }
@@ -50,7 +52,7 @@ function Stat({ label, value, sub }) {
 }
 
 // 수업 중에 쓰는 반별 설정: 코치(API)를 막을지 풀지, 지금 어느 단계(기획안 / 코드 / 발표)인지, 반 전체 코인
-// 학생 화면은 약 30초마다(화면을 보고 있을 때) 설정을 받아 오므로 바꾸면 30초 안에 반영된다.
+// 학생 화면은 탭을 누르거나 화면으로 돌아올 때 설정을 다시 받아 온다 (주기적으로 묻지 않는다).
 function ClassPanel({ rows, settings: all, onChange, filter, setFilter }) {
   const [coins, setCoins] = useState(3)
   const [msg, setMsg] = useState('')
@@ -98,7 +100,7 @@ function ClassPanel({ rows, settings: all, onChange, filter, setFilter }) {
           )
         })}
       </div>
-      <p className="ad-note">{msg || '단계를 바꾸면 30초 안에 그 반 학생 화면에서 잠긴 탭이 열리고 닫혀요. 코치를 닫으면 코인은 줄지 않고, 보낼 수 없을 뿐이에요.'}</p>
+      <p className="ad-note">{msg || '단계를 바꾸면 학생이 탭을 누르거나 화면으로 돌아올 때 잠긴 탭이 열리고 닫혀요(바로 보이게 하려면 학생에게 "탭을 한 번 눌러 보세요"라고 말해요). 코치를 닫으면 코인은 줄지 않고, 보낼 수 없을 뿐이에요.'}</p>
     </section>
   )
 }
@@ -280,13 +282,13 @@ export default function Admin() {
       })
   }, [])
 
-  // 학생 기록이 계속 바뀌므로 주기적으로 새로 읽는다
+  // 주기적으로 읽지 않는다. 처음 열 때, 이 화면으로 돌아올 때, "새로고침"을 누를 때만 읽는다 (서버 부담을 줄이려고)
   useEffect(() => {
     if (!authed) return undefined
     refresh()
-    // 30초마다, 이 탭을 보고 있을 때만 새로 읽는다 (켜 둔 채 둔 관리자 탭이 서버를 계속 부르지 않게)
-    const id = setInterval(() => { if (document.visibilityState === 'visible') refresh() }, 30000)
-    return () => clearInterval(id)
+    const onVis = () => { if (document.visibilityState === 'visible') refresh() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
   }, [authed, refresh])
   useEffect(() => { document.title = '관리자 · 원묵고 빅데이터원리탐구 도우미' }, [])
 
@@ -305,8 +307,8 @@ export default function Admin() {
   const dry = rows.filter(r => r.coinsLeft === 0).length
 
   const csv = () => {
-    const head = ['팀', '팀원', '완료 단계', '현재 단계', '데이터', '쓴 코인', '전체 코인', '질문 검토', '마지막 수정']
-    const lines = rows.map(r => [r.name, r.members, `${r.n}/${PLAN_STEPS.length}`, r.cur, r.dataset, r.coinsUsed, r.coinsTotal, r.reviews, r.updatedAt ? new Date(r.updatedAt).toLocaleString('ko-KR') : ''])
+    const head = ['팀', '팀원', '완료 단계', '현재 단계', '데이터', '쓴 코인', '전체 코인', '질문 검토', '결과 정리', '마지막 수정']
+    const lines = rows.map(r => [r.name, r.members, `${r.n}/${PLAN_STEPS.length}`, r.cur, r.dataset, r.coinsUsed, r.coinsTotal, r.reviews, `${r.results}/${RESULT_KEYS.length}`, r.updatedAt ? new Date(r.updatedAt).toLocaleString('ko-KR') : ''])
     const esc = v => `"${String(v).replaceAll('"', '""')}"`
     const blob = new Blob(['﻿' + [head, ...lines].map(l => l.map(esc).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' })
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'teams-progress.csv'; a.click(); URL.revokeObjectURL(a.href)
@@ -355,7 +357,7 @@ export default function Admin() {
         <div className="ad-tablewrap">
           <table className="ad-table">
             <caption className="sr">팀별 진행 현황</caption>
-            <thead><tr><th>팀{clsFilter && ` (${clsFilter}반만)`}</th><th>진행</th><th>지금 단계</th><th>데이터</th><th>코인</th><th>검토</th><th>마지막 수정</th></tr></thead>
+            <thead><tr><th>팀{clsFilter && ` (${clsFilter}반만)`}</th><th>진행</th><th>지금 단계</th><th>데이터</th><th>코인</th><th>검토</th><th>결과</th><th>마지막 수정</th></tr></thead>
             <tbody>
               {shown.map(r => (
                 <tr key={r.name} className={pick === r.name ? 'on' : ''}>
@@ -365,10 +367,11 @@ export default function Admin() {
                   <td>{r.dataset}</td>
                   <td className={r.coinsLeft === 0 ? 'warn' : ''}>{r.coinsLeft}/{r.coinsTotal} 남음</td>
                   <td>{r.reviews}/5</td>
+                  <td>{r.results}/{RESULT_KEYS.length}</td>
                   <td>{ago(r.updatedAt)}</td>
                 </tr>
               ))}
-              {shown.length === 0 && <tr><td colSpan="7" className="ad-empty">검색 결과가 없어요.</td></tr>}
+              {shown.length === 0 && <tr><td colSpan="8" className="ad-empty">검색 결과가 없어요.</td></tr>}
             </tbody>
           </table>
         </div>
