@@ -1,32 +1,49 @@
 ﻿import { useState } from 'react'
 import { TOPICS, ERRORS, SYMPTOMS, TERMS } from './data/hints.js'
 import { TabIntro } from './Guide.jsx'
-import { buildCodeMemo, isFreq, isGoogleUrl } from './doc.js'
+import { buildCodeMemo, isFreq, isGoogleUrl, statFor, chartFor, missingOf, axisOf } from './doc.js'
 import { NOTEBOOK_URL } from './data/meta.js'
 import Results from './Results.jsx'
 
-// 빈칸 뼈대의 {G}(묶는 기준)·{M}(계산할 열)을 우리 팀이 기획에서 고른 열 이름으로 바꾼다. 안 골랐으면 ___ 로 둔다.
-// 열 이름은 우리 팀의 선택이라 알려 줘도 되고, 함수 이름 같은 핵심은 여전히 빈칸이다.
-const fillCols = (s, game) => s.replaceAll('{G}', game.groupBy || '___').replaceAll('{M}', isFreq(game) ? '___' : game.measure || '___')
+// 3단계에서 보여 주는 "우리 조가 기획에서 고른 것". 코드에 넣어 주지 않고 옆에 따로 보여 준다.
+function picksOf(kinds, game) {
+  const s = statFor(game), c = chartFor(game), mm = missingOf(game.missingMethod), ax = axisOf(game)
+  const none = '(기획에서 아직 안 정했어요)'
+  const map = {
+    file: ['데이터 파일', game.dataset ? `${game.dataset}.csv` : none],
+    G: ['기준 열 (묶는 기준)', game.groupBy || none],
+    M: ['사용할 열 (계산할 열)', isFreq(game) ? '없음 (그룹별 개수를 세요)' : game.measure || none],
+    S: ['통계 함수', isFreq(game) ? '개수 (count / value_counts)' : s?.ko ? `${s.ko}` : none],
+    missing: ['결측값 처리 계획', mm ? mm.ko : none],
+    newCol: ['새 열 아이디어', game.newCol?.trim() || '(기획에서 안 정했으면 추천 짝 표를 보세요)'],
+    chart: ['그래프 종류', c?.short || c?.ko || none],
+    labels: ['축', `가로축 ${game.xLabel?.trim() || ax.x || '?'} / 세로축 ${game.yLabel?.trim() || ax.y || '?'}`],
+  }
+  return kinds.map(k => map[k]).filter(Boolean)
+}
 
 function Ladder({ topic, game }) {
   const [level, setLevel] = useState(1)
   const [tried, setTried] = useState('')
   const next = () => { setLevel(l => l + 1); setTried('') }
   const split = a => a.split(' : ')
-  const personal = topic.skeleton.includes('{G}') || topic.skeleton.includes('{M}')
   return (
     <div className="ladder">
-      <div className="step"><b>1단계 · 먼저 생각해 볼 질문</b><ul>{topic.asks.map(a => <li key={a}>{a}</li>)}</ul></div>
+      <div className="step"><b>먼저 생각해 볼 질문</b><ul>{topic.asks.map(a => <li key={a}>{a}</li>)}</ul></div>
+      <div className="step"><b>1단계 · 빈칸 틀</b><small className="muted"> 학습지와 수업 노트북을 보며 빈칸을 채워 보세요</small>
+        <pre className="frame">{topic.frame}</pre></div>
       {level >= 2 ? (
-        <div className="step"><b>2단계 · 쓸 수 있는 도구</b>
+        <div className="step"><b>2단계 · 쓸 함수</b>
           <ul>{topic.tools.map(a => { const [k, v] = split(a); return <li key={a}><code>{k}</code>{v && ` ${v}`}</li> })}</ul>
         </div>
-      ) : <div className="step locked"><b>2단계 · 쓸 수 있는 도구</b><small>🔒 시도한 것을 적으면 열려요</small></div>}
-      {level >= 3 ? <div className="step"><b>3단계 · 빈칸 뼈대</b>
-          {personal && game.groupBy && <small className="muted"> 기획에서 고른 열(묶는 기준 <code>{game.groupBy}</code>{!isFreq(game) && game.measure && <>, 계산할 열 <code>{game.measure}</code></>})을 넣어 두었어요</small>}
-          <pre className="frame">{fillCols(topic.skeleton, game)}</pre></div>
-        : <div className="step locked"><b>3단계 · 빈칸 뼈대</b><small>🔒 2단계를 읽고 다시 시도해 본 뒤 열려요</small></div>}
+      ) : <div className="step locked"><b>2단계 · 쓸 함수</b><small>🔒 시도한 것을 적으면 열려요</small></div>}
+      {level >= 3 ? (
+        <div className="step"><b>3단계 · 빈칸마다 들어갈 것</b>
+          <pre className="frame">{topic.named}</pre>
+          <div className="picks"><small className="muted">우리 조가 기획에서 고른 것</small>
+            <ul>{picksOf(topic.picks, game).map(([k, v]) => <li key={k}>{k}: <code>{v}</code></li>)}</ul></div>
+        </div>
+      ) : <div className="step locked"><b>3단계 · 빈칸마다 들어갈 것</b><small>🔒 2단계를 읽고 다시 시도해 본 뒤 열려요</small></div>}
       {level < 3 && (
         <div className="unlock">
           <label className="small" htmlFor="tried">다음 단계를 열기 전에, 지금까지 시도한 것을 한 줄로 적어 보세요.</label>

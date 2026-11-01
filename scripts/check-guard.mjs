@@ -12,12 +12,12 @@ const violates = new Function(`${js}; return violates;`)()
 
 const F = '```'
 const cases = [
-  ['빈칸 뼈대(허용)', `생각해 보세요.\n${F}\nresult = df_use.groupby("___")["___"].___()\n${F}`, false],
-  ['완성 코드 블록(차단)', `${F}\nresult = df_use.groupby("age")["score"].mean()\n${F}`, true],
+  ['빈칸 뼈대(허용)', `생각해 보세요.\n${F}\nresult = df.groupby("___")["___"].___()\n${F}`, false],
+  ['완성 코드 블록(차단)', `${F}\nresult = df.groupby("age")["score"].mean()\n${F}`, true],
   ['7줄 블록(차단)', `${F}\n___\n1\n2\n3\n4\n5\n6\n${F}`, true],
-  ['펜스 없는 완성 코드(차단)', '이렇게 하세요:\ndf_use.groupby("age")["score"].mean()', true],
+  ['펜스 없는 완성 코드(차단)', '이렇게 하세요:\ndf.groupby("age")["score"].mean()', true],
   ['도구 이름만(허용)', '`groupby` 를 써 보세요. 무엇으로 묶고 싶나요?', false],
-  ['펜스 없는 빈칸 줄(허용)', 'result = df_use.groupby("___")["___"].___()', false],
+  ['펜스 없는 빈칸 줄(허용)', 'result = df.groupby("___")["___"].___()', false],
 ]
 let bad = 0
 for (const [name, text, expect] of cases) {

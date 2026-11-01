@@ -386,3 +386,5 @@ details summary { cursor: pointer; }
 .results h4 { margin: 18px 0 6px; }
 .graphprev { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; margin-top: 8px; }
 .graphprev img { max-width: min(420px, 100%); border: 1px solid var(--line); border-radius: 8px; }
+.ladder .picks { margin-top: 8px; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--blue) 6%, transparent); }
+.ladder .picks ul { margin-top: 4px; }
