@@ -2,7 +2,7 @@
 import { TOPICS, ERRORS, SYMPTOMS, TERMS } from './data/hints.js'
 import { TabIntro } from './Guide.jsx'
 import { buildCodeMemo, isFreq, isGoogleUrl, statFor, chartFor, missingOf, axisOf } from './doc.js'
-import { NOTEBOOK_URL } from './data/meta.js'
+import { NOTEBOOK_URL, EXAMPLE_URL } from './data/meta.js'
 import Results from './Results.jsx'
 
 // 3단계에서 보여 주는 "우리 조가 기획에서 고른 것". 코드에 넣어 주지 않고 옆에 따로 보여 준다.
@@ -11,8 +11,8 @@ function picksOf(kinds, game) {
   const none = '(기획에서 아직 안 정했어요)'
   const map = {
     file: ['데이터 파일', game.dataset ? `${game.dataset}.csv` : none],
-    G: ['기준 열 (묶는 기준)', game.groupBy || none],
-    M: ['사용할 열 (계산할 열)', isFreq(game) ? '없음 (그룹별 개수를 세요)' : game.measure || none],
+    G: ['기준열 (묶는 기준)', game.groupBy || none],
+    M: ['계산할열', isFreq(game) ? '없음 (그룹별 개수를 세요)' : game.measure || none],
     S: ['통계 함수', isFreq(game) ? '개수 (count / value_counts)' : s?.ko ? `${s.ko}` : none],
     missing: ['결측값 처리 계획', mm ? mm.ko : none],
     newCol: ['새 열 아이디어', game.newCol?.trim() || '(기획에서 안 정했으면 추천 짝 표를 보세요)'],
@@ -124,7 +124,7 @@ function TeamLinks({ game, patch }) {
   return (
     <section className="panel">
       <h3>우리 조 노트북·폴더</h3>
-      <p className="hint">코드는 12차시부터 써 온 <b>나의 ~_프로젝트.ipynb</b>(우리 조 데이터의 노트북)에 이어서 써요. 노트북과 조 공유 폴더 주소를 한 번 넣어 두면 다음 시간에도 여기서 바로 열 수 있어요.</p>
+      <p className="hint">코드는 <b>우리 조 데이터 분석 노트북</b>(패들렛 우리 조 칸의 노트북 링크)에 써요. 이 노트북이 최종 산출물이에요. 노트북과 조 공유 폴더 주소를 한 번 넣어 두면 다음 시간에도 여기서 바로 열 수 있어요.</p>
       <div className="two-col">
         <label className="field"><span className="lbl">Colab 노트북 주소</span>
           <input value={game.notebookUrl} placeholder="https://colab.research.google.com/drive/…" onChange={e => patch({ notebookUrl: e.target.value })} />
@@ -137,7 +137,7 @@ function TeamLinks({ game, patch }) {
         {link(game.notebookUrl, '우리 노트북 열기')}
         {link(game.folderUrl, '조 공유 폴더 열기')}
       </div>
-      <p className="muted small">노트북이 없을 때만: <a href={NOTEBOOK_URL} target="_blank" rel="noopener noreferrer">빈 프로젝트 노트북 템플릿</a>을 열고 "Drive에 사본 저장"을 눌러요.</p>
+      <p className="muted small">우리 조 노트북이 없을 때만: <a href={NOTEBOOK_URL} target="_blank" rel="noopener noreferrer">조별 데이터 분석 노트북 템플릿</a>을 열고 "Drive에 사본 저장"을 눌러요. 다 쓴 예시는 <a href={EXAMPLE_URL} target="_blank" rel="noopener noreferrer">완성 예시(students)</a>.</p>
     </section>
   )
 }

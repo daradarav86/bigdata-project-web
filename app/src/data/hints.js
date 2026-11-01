@@ -3,7 +3,7 @@
 //   1단계 frame: 빈칸(___)만 있는 틀
 //   2단계 tools: 쓸 함수 이름과 하는 일
 //   3단계 named: 빈칸 자리에 무엇이 들어가는지 이름을 붙인 틀 + picks: 우리 조가 기획에서 고른 것 (코드에 넣어 주지는 않고 따로 보여 준다)
-// picks 종류: file(데이터 파일), G(기준 열), M(사용할 열), S(통계 함수), missing(결측값 처리), newCol(새 열 아이디어), chart(그래프 종류), labels(축 이름)
+// picks 종류: file(데이터 파일), G(기준열), M(계산할열), S(통계 함수), missing(결측값 처리), newCol(새 열 아이디어), chart(그래프 종류), labels(축 이름)
 export const TOPICS = [
   {
     id: 'explore', name: '[12차시] 구조 확인',
@@ -18,7 +18,7 @@ export const TOPICS = [
     asks: ['사용할 숫자 열의 평균과 중앙값은 비슷한가요, 많이 다른가요? 다르다면 왜일까요?', 'describe()의 count가 shape의 행 수보다 작다면 무엇 때문일까요?', '기준 열에는 어떤 값이 몇 개씩 있나요?'],
     frame: 'print(df["___"].___())                   # 한 번에 요약\nprint(df["___"].___(), df["___"].___())   # 평균, 중앙값\nprint(df["___"].___())                   # 값별 개수',
     tools: ['describe() : count·mean·std·min·max·사분위수를 한 번에', 'mean() / median() / max() / min() / count() : 하나씩 구하기', 'value_counts() : 글자·구간 열의 값별 개수'],
-    named: 'print(df["사용할 열"].describe())\nprint(df["사용할 열"].평균(), df["사용할 열"].중앙값())\nprint(df["기준 열"].값별개수())',
+    named: 'print(df["계산할열"].describe())\nprint(df["계산할열"].평균(), df["계산할열"].중앙값())\nprint(df["기준열"].값별개수())',
     picks: ['M', 'G'],
   },
   {
@@ -26,7 +26,7 @@ export const TOPICS = [
     asks: ['결측값(NaN)은 어느 열에 몇 개 있고, 전체의 몇 %쯤인가요?', '제거한 표와 대체한 표를 따로 만들면, 행 수와 평균이 각각 어떻게 달라지나요?', '비교해 보니 우리 질문에는 어느 쪽(또는 그대로 두기)이 맞고, 이유는 무엇인가요?'],
     frame: 'print(df.___().___())\ndf_removed = df.___()\ndf_filled = df.___()\ndf_filled["___"] = df_filled["___"].___(___)\nprint(df.___, df_removed.___)\nprint(df_removed["___"].mean(), df_filled["___"].mean())',
     tools: ['isnull().sum() : 열별 결측값(NaN) 개수', 'dropna() : 결측값이 있는 행을 지운 새 표 (원본 df는 그대로)', 'copy() : 원본을 복사한 새 표', 'fillna(값) : 결측값을 값으로 채우기. 이상값이 있으면 평균보다 중앙값', 'shape : 행 수가 얼마나 줄었는지 비교'],
-    named: 'print(df.결측확인().합계())\ndf_removed = df.제거()\ndf_filled = df.복사()\ndf_filled["사용할 열"] = df_filled["사용할 열"].채우기(채울 값)\nprint(df.행열개수, df_removed.행열개수)\nprint(df_removed["사용할 열"].mean(), df_filled["사용할 열"].mean())',
+    named: 'print(df.결측확인().합계())\ndf_removed = df.제거()\ndf_filled = df.복사()\ndf_filled["계산할열"] = df_filled["계산할열"].채우기(채울 값)\nprint(df.행열개수, df_removed.행열개수)\nprint(df_removed["계산할열"].mean(), df_filled["계산할열"].mean())',
     picks: ['M', 'missing'],
   },
   {
@@ -39,10 +39,10 @@ export const TOPICS = [
   },
   {
     id: 'groupby', name: '[15차시] 그룹별 분석',
-    asks: ['무엇을 기준으로 묶고, 어떤 열의 무엇(합계·평균·개수)을 구하고 싶나요?', '그룹마다 몇 명씩 있나요? 그룹 크기가 많이 다르면 합계보다 평균이 공정해요', '사용할 열은 숫자(int·float)인가요?'],
+    asks: ['무엇을 기준으로 묶고, 어떤 열의 무엇(합계·평균·개수)을 구하고 싶나요?', '그룹마다 몇 명씩 있나요? 그룹 크기가 많이 다르면 합계보다 평균이 공정해요', '계산할열은 숫자(int·float)인가요?'],
     frame: 'result = df.___("___")["___"].___()\nprint(result)',
     tools: ['groupby("열") : 그 열의 값끼리 묶기', 'sum() / mean() / count() : 묶은 그룹마다 합계·평균·개수. 세 가지를 모두 구해서 비교해 봐요', 'value_counts() : 그룹마다 몇 명인지'],
-    named: 'result = df.groupby("기준 열")["사용할 열"].통계함수()\nprint(result)',
+    named: 'result = df.groupby("기준열")["계산할열"].통계함수()\nprint(result)',
     picks: ['G', 'M', 'S'],
   },
   {
@@ -50,7 +50,7 @@ export const TOPICS = [
     asks: ['여러 번 반복하는 코드가 있나요? (예: 결측값 개수 세기, 그룹별 평균 구하기)', '함수에 넘겨줄 값(매개변수)은 무엇인가요? (예: 표, 기준 열 이름)', '함수가 돌려줄 값(return)은 무엇인가요?'],
     frame: 'def ___(___, ___):\n    ___ = ___\n    return ___\n\nprint(___(___, ___))',
     tools: ['def 함수이름(매개변수): : 함수 만들기 (이름은 get_ / count_ 처럼 영어로)', 'return 값 : 계산한 결과를 돌려주기', '함수이름(값) : 만든 함수 부르기. 다른 기준 열로도 다시 불러 봐요'],
-    named: 'def 함수이름(표, 기준열):\n    결과 = (반복하던 계산)\n    return 결과\n\nprint(함수이름(df, "기준 열"))',
+    named: 'def 함수이름(표, 기준열):\n    결과 = (반복하던 계산)\n    return 결과\n\nprint(함수이름(df, "기준열"))',
     picks: ['G', 'M'],
   },
   {
@@ -66,7 +66,7 @@ export const TOPICS = [
     asks: ['어느 그룹이 가장 높고 가장 낮았나요? 값은 얼마인가요?', '두 집단의 차이는 몇 점(또는 몇 배)인가요?', '이 결과가 "함께 움직이는 경향"을 말해 주나요, 아니면 원인을 말해 주나요?', '이 결과를 모든 대상에게 일반화하기 어려운 이유는 무엇인가요?'],
     frame: '① 사실: ___별 ___의 ___은 ___이(가) 가장 높고(___), ___이(가) 가장 낮았다(___).\n② 비교: 두 집단의 차이는 ___로, ___배 정도였다.\n③ 의미: 이는 ___ 와(과) ___ 가 함께 움직이는 경향이 있음을 보여 준다.\n한계: 다만 ___ 때문에 일반화하기 어렵다.',
     tools: ['result.idxmax() / result.idxmin() : 가장 큰·작은 그룹의 이름', 'result.max() / result.min() : 가장 큰·작은 값', '틀: ① 사실 → ② 비교 → ③ 의미 → 한계 (원인이라고 단정하지 않기)'],
-    named: '① 사실: (기준 열)별 (사용할 열)의 (통계)은 (가장 큰 그룹)이 가장 높고(값), (가장 작은 그룹)이 가장 낮았다(값).\n② 비교: 두 집단의 차이는 (큰 값 − 작은 값)로, (큰 값 ÷ 작은 값)배 정도였다.\n③ 의미: 이는 (기준 열)와 (사용할 열)이 함께 움직이는 경향이 있음을 보여 준다.\n한계: 다만 (한계 이유) 때문에 일반화하기 어렵다.',
+    named: '① 사실: (기준열)별 (계산할열)의 (통계)은 (가장 큰 그룹)이 가장 높고(값), (가장 작은 그룹)이 가장 낮았다(값).\n② 비교: 두 집단의 차이는 (큰 값 − 작은 값)로, (큰 값 ÷ 작은 값)배 정도였다.\n③ 의미: 이는 (기준열)와 (계산할열)이 함께 움직이는 경향이 있음을 보여 준다.\n한계: 다만 (한계 이유) 때문에 일반화하기 어렵다.',
     picks: ['G', 'M', 'S'],
   },
 ]
@@ -84,7 +84,7 @@ export const TERMS = [
 
 // 증상으로 찾기 (노트북 "막히면?" 표 + 자주 하는 막힘)
 export const SYMPTOMS = [
-  { q: '결과가 NaN이거나 비어 있어요', a: ['사용할 열이 숫자 열인지 df.dtypes 로 확인', '그 열에 결측값(NaN)이 너무 많지 않은지 df.isnull().sum() 으로 확인'] },
+  { q: '결과가 NaN이거나 비어 있어요', a: ['계산할열이 숫자 열인지 df.dtypes 로 확인', '그 열에 결측값(NaN)이 너무 많지 않은지 df.isnull().sum() 으로 확인'] },
   { q: '그래프가 안 그려져요', a: ['계산할 열이 숫자인지 확인', 'result 가 만들어졌는지 확인 (위 셀부터 순서대로 실행)', 'import matplotlib.pyplot as plt 를 실행했는지 확인'] },
   { q: '그래프의 한글이 □로 깨져요', a: ['노트북 맨 위에서 !pip install -q koreanize-matplotlib 와 import koreanize_matplotlib 를 실행', '그래도 깨지면 [런타임 → 세션 다시 시작] 후 처음부터 다시 실행', '급하면 제목·축 이름을 영어로 써요'] },
   { q: '막대가 너무 많아요', a: ['result.head(10) 으로 앞 10개만 그려 보기'] },

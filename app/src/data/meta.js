@@ -3,7 +3,8 @@
 export const SITE_NAME = '원묵고 빅데이터원리탐구 도우미'
 
 // Colab에서 여는 프로젝트 노트북 템플릿 (수업에서 쓰는 노트북 주소가 따로 있으면 이 값만 바꾸면 된다)
-export const NOTEBOOK_URL = 'https://colab.research.google.com/github/daradarav86/bigdata/blob/main/notebooks/project_template.ipynb'
+export const NOTEBOOK_URL = 'https://colab.research.google.com/github/daradarav86/bigdata/blob/main/notebooks/project_template_v2.ipynb'
+export const EXAMPLE_URL = 'https://colab.research.google.com/github/daradarav86/bigdata/blob/main/notebooks/example_students_v2.ipynb'
 
 // 열 설명에서 한글과 숫자가 붙어 있으면 띄운다 ("성적0~20" → "성적 0~20"). 원본 README 표에서 단위가 붙어 나온 것.
 for (const ds of datasets) for (const c of ds.columns) c.meaning = c.meaning.replace(/([가-힣])(\d)/g, '$1 $2')

@@ -58,8 +58,8 @@ export default function Practice({ go }) {
 
       <section className="panel">
         <h3>1. 무엇끼리 비교하고, 무엇을 계산할까?</h3>
-        <Pick label="기준 열 (묶는 기준)" items={GROUPS} value={g} onChange={v => { setG(v); setReview(null) }} />
-        <Pick label="사용할 열 (계산할 열)" items={MEASURES} value={m} onChange={v => { setM(v); setReview(null) }} />
+        <Pick label="기준열 (묶는 기준)" items={GROUPS} value={g} onChange={v => { setG(v); setReview(null) }} />
+        <Pick label="계산할열" items={MEASURES} value={m} onChange={v => { setM(v); setReview(null) }} />
         <Pick label="통계 함수" items={STATS.map(([id, ko, fn]) => [id, `${ko} · ${fn}`])} value={s} onChange={setS} />
       </section>
 
@@ -80,12 +80,12 @@ export default function Practice({ go }) {
       <section className="panel">
         <h3>3. 이렇게 생각하고 코드를 짜요</h3>
         <p className="muted small">2차시에 코드를 쓸 때 생각하는 순서예요. 연습 데이터라서 완성 코드까지 보여 줘요. 우리 조 데이터로 할 때는 이 순서로 직접 써요.</p>
-        {!ready ? <p className="muted">먼저 1번에서 기준 열과 사용할 열을 골라요.</p>
+        {!ready ? <p className="muted">먼저 1번에서 기준열과 계산할열을 골라요.</p>
           : !think ? <button onClick={() => setThink(true)}>생각 순서 보기</button>
           : (
             <ol className="thinking">
-              <li><b>무엇끼리 비교하나?</b> 기준 열 <code>{g}</code> → 그 값끼리 묶어요 → <code>df.groupby("{g}")</code></li>
-              <li><b>무엇을 계산하나?</b> 사용할 열 <code>{m}</code> → 그 열만 꺼내요 → <code>["{m}"]</code></li>
+              <li><b>무엇끼리 비교하나?</b> 기준열 <code>{g}</code> → 그 값끼리 묶어요 → <code>df.groupby("{g}")</code></li>
+              <li><b>무엇을 계산하나?</b> 계산할열 <code>{m}</code> → 그 열만 꺼내요 → <code>["{m}"]</code></li>
               <li><b>어떤 통계로?</b> {stat[1]} → <code>.{stat[2]}</code></li>
               <li><b>한 줄로 합치면</b><pre className="frame">{`result = df.groupby("${g}")["${m}"].${stat[2]}\nprint(result)`}</pre></li>
               <li><b>그래프로 보이기</b> 그룹 비교는 막대 <pre className="frame">{`plt.bar(result.index, result.values)\nplt.title("${g}별 ${m} ${stat[1]}")\nplt.show()`}</pre></li>
