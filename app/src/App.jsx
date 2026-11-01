@@ -18,8 +18,9 @@ const TABS = [
   ['deck', '발표', '3분 발표 7장'],
 ]
 
-// 저장 상태 (서버에 저장됐는지 학생이 볼 수 있게)
-const SAVE_LABEL = { saved: '저장됨', saving: '저장 중…', error: '저장 실패 · 다시 시도 중' }
+// 저장 상태 (서버에 저장됐는지 학생이 볼 수 있게). 자동 저장도 되고, "저장" 버튼으로 바로 저장할 수도 있다.
+const hhmm = t => new Date(t).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+const saveLabel = (state, at) => (state === 'saving' ? '저장 중…' : state === 'error' ? '저장 실패 · 인터넷을 확인하고 다시 눌러요' : at ? `저장됨 ${hhmm(at)}` : '저장됨')
 
 export default function App() {
   const g = useGame()
@@ -40,7 +41,8 @@ export default function App() {
       <header className="top">
         <strong className="logo">{SITE_NAME}</strong>
         <span className="chip">{game.team}</span>
-        <span className={'save ' + g.saveState} role="status">{SAVE_LABEL[g.saveState]}</span>
+        <span className={'save ' + g.saveState} role="status">{saveLabel(g.saveState, g.savedAt)}</span>
+        <button className="savebtn" disabled={g.saveState === 'saving'} onClick={g.saveNow}>저장</button>
         <button className="link small" aria-expanded={showHelp} onClick={() => setShowHelp(v => !v)}>사용법</button>
         <button className="link small" onClick={g.logout}>팀 나가기</button>
         <button className="link small" onClick={() => {

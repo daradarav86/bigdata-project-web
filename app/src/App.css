@@ -36,6 +36,8 @@ h4 { margin: 16px 0 4px; }
 .save { font-size: .8rem; color: var(--muted); }
 .save.saved { color: var(--ok); }
 .save.error { color: var(--warn); font-weight: 600; }
+.savebtn { border: 1.5px solid var(--blue); background: var(--card); color: var(--blue); border-radius: 99px; padding: 2px 12px; font-size: .85rem; font-weight: 600; }
+.savebtn:disabled { opacity: .5; }
 .link { background: none; border: 0; padding: 0; color: var(--blue); text-decoration: underline; text-align: left; }
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; overflow-x: auto; }
 .tabs button { background: none; border: 0; padding: 10px 22px; color: var(--muted); font-weight: 700; border-bottom: 3px solid transparent; white-space: nowrap; text-align: center; line-height: 1.3; }

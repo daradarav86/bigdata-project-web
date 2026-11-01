@@ -81,6 +81,7 @@ export function useGame() {
   const [s, setS] = useState(() => ({ ...OUT, token: readToken() }))
   const [loading, setLoading] = useState(() => !!readToken())
   const [saveState, setSaveState] = useState('saved') // 'saved' | 'saving' | 'error'
+  const [savedAt, setSavedAt] = useState(0) // 마지막으로 서버에 저장된 시각 (화면 위쪽 "저장됨 10:32")
   const [notice, setNotice] = useState('') // 입장 화면에 보여 줄 안내 (예: 다시 들어가 주세요)
   const ref = useRef(s)
   useEffect(() => { ref.current = s })
@@ -127,6 +128,7 @@ export function useGame() {
       if (r.rev === rev.current + 1) rev.current = r.rev
       saved.current++
       setSaveState('saved')
+      setSavedAt(Date.now())
     } catch (e) {
       sending.current = false
       if (e.status === 401) { leave(e.message); return }
@@ -243,18 +245,24 @@ export function useGame() {
   }
   // 들어가기: 반·조와 PIN이 맞으면 그 팀으로 연다
   const joinTeam = (cls, no, pass) => run(async () => { const r = await backend.join(cls, no, pass); enter(r, r.token) })
-  // 나가기 전에 보내는 중인 저장을 기다렸다가 남은 변경까지 보낸다
-  const logout = async () => {
+  // 지금 바로 저장 (학생이 "저장" 버튼을 누를 때, 팀 나가기 전). 보내는 중인 저장이 있으면 끝날 때까지 기다린다.
+  // 저장에 성공했거나 보낼 것이 없으면(이미 모두 저장됨) true
+  const saveNow = async () => {
     for (let i = 0; i < 50 && sending.current; i++) await new Promise(res => setTimeout(res, 100))
+    if (!Object.keys(pending.current).length) {
+      if (saveState !== 'error') setSavedAt(Date.now()) // 이미 모두 저장돼 있다
+      return saveState !== 'error'
+    }
     await flush()
-    leave()
+    return !Object.keys(pending.current).length
   }
+  const logout = async () => { await saveNow(); leave() }
   // 이 팀의 기록을 지운다 (팀 자체도 삭제). 팀 전체가 사라지므로 비밀번호를 한 번 더 받는다.
   const removeTeam = pin => run(async () => { await backend.remove(ref.current.token, pin); leave('팀을 지웠어요.') })
 
   return {
     game, patch, setDeck, setSize, setMember, aiLeft, aiTotal, consumeAi, setChat,
-    current: s.game ? s.game.team : '', token: s.token, settings: s.settings, loading, saveState, notice, refresh,
+    current: s.game ? s.game.team : '', token: s.token, settings: s.settings, loading, saveState, savedAt, saveNow, notice, refresh,
     lastTeam: readLast(), server: SERVER, createTeam, joinTeam, logout, removeTeam,
   }
 }
