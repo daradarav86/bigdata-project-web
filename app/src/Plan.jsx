@@ -1,7 +1,7 @@
 ﻿import { useMemo, useState } from 'react'
 import datasets from './data/datasets.json'
 import { FRAMES, STATS, CHARTS, MISSING, KIND_LABEL, getDs, getCol } from './data/meta.js'
-import { PLAN_STEPS, stepDone, draftQuestion, checkCodeDesign, buildPlanText, pct, statFor, chartFor, isFreq, hasMeasure, picksKey, frameOf, nameOf, missingOf, reviewState, MAX_REVIEWS, MAX_CONCERNS, concernText, axisOptions, axisOf, dataCheck } from './doc.js'
+import { PLAN_STEPS, stepDone, draftQuestion, checkCodeDesign, buildPlanText, pct, statFor, chartFor, isFreq, hasMeasure, picksKey, frameOf, nameOf, missingOf, reviewState, MAX_REVIEWS, MAX_CONCERNS, concernText, axisOptions, axisOf, dataCheck, isGoogleUrl } from './doc.js'
 import { reviewQuestion } from './coach.js'
 import { Text, Seg, Think, Stuck } from './ui.jsx'
 import { exportPlanDocx } from './exportDoc.js'
@@ -579,7 +579,10 @@ function SummaryStep({ game, patch, go, deckOpen = true }) {
       </div>
       {/* 선생님이 아직 발표 단계를 열지 않았으면 눌러도 아무 일이 없는 버튼 대신 안내를 보여 준다 */}
       {!deckOpen && <p className="hint">🔒 발표 슬라이드는 선생님이 발표 단계를 열면 만들 수 있어요.</p>}
-      {saved && <p className="ok-msg" role="status">"{saved}"를 내려받았어요.</p>}
+      {saved && <p className="ok-msg" role="status">"{saved}"를 내려받았어요. 이 파일을 우리 조 공유 폴더에 올려요.</p>}
+      {/* 산출물은 모두 조 공유 폴더에 올린다 (평가 근거). 코드 탭에서 넣어 둔 폴더 주소가 있으면 바로 연다 */}
+      <p className="hint">기획안은 <b>Word로 저장 → 우리 조 공유 폴더에 올리기</b>까지 해야 끝이에요. 2차시에 결과를 쓴 뒤 다시 저장하면 4번까지 채워진 기획안이 돼요.
+        {isGoogleUrl(game.folderUrl) && <> <a href={game.folderUrl.trim()} target="_blank" rel="noopener noreferrer">조 공유 폴더 열기</a></>}</p>
       {saveErr && <p className="warn" role="alert">{saveErr}</p>}
       <div className="howto-docs">
         <b>구글 문서(Docs)로 이어서 쓰려면</b>

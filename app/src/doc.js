@@ -165,6 +165,9 @@ export const concernMain = g => (g.concernParts.find(p => p.trim()) || '').trim(
 
 // 발표 장마다 말하는 사람. 장마다 따로(deck.speaker0 ~ speaker6) 저장해서, 팀원이 서로 다른 장을 동시에 정해도 덮어쓰지 않는다.
 // 예전에는 deck.speakers 목록 하나에 저장했으므로 그 값도 읽는다.
+// 우리 조 노트북·공유 폴더 주소는 구글 주소만 받는다 (다른 사이트로 보내는 링크가 섞이지 않게)
+export const isGoogleUrl = u => /^https:\/\/(colab\.research\.google\.com|drive\.google\.com|docs\.google\.com)\//.test(String(u ?? '').trim())
+
 export const SLIDE_COUNT = 7
 export const speakersOf = d => Array.from({ length: SLIDE_COUNT }, (_, n) => d[`speaker${n}`] ?? d.speakers?.[n] ?? '')
 // 그래프 축을 한 줄로 (원그래프는 축이 없다). 축 이름을 썼으면 함께 보여 준다.

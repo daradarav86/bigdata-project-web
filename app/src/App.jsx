@@ -72,7 +72,7 @@ export default function App() {
       <main>
         <ErrorBoundary key={tab}>
           {tab === 'plan' && <Plan {...g} game={game} go={setTab} deckOpen={phase.open.includes('deck')} />}
-          {tab === 'code' && <Code game={game} setDeck={g.setDeck} />}
+          {tab === 'code' && <Code game={game} setDeck={g.setDeck} patch={g.patch} />}
           {tab === 'deck' && <Deck {...g} game={game} go={setTab} />}
         </ErrorBoundary>
       </main>

@@ -11,13 +11,13 @@ export const TOPICS = [
     id: 'stats', name: '[13차시] 통계 요약',
     asks: ['계산할 숫자 열의 평균과 중앙값은 비슷한가요, 많이 다른가요? 다르다면 왜일까요?', 'describe()의 count가 shape의 행 수보다 작다면 무엇 때문일까요?', '묶는 기준 열에는 어떤 값이 몇 개씩 있나요?'],
     tools: ['df["열"].describe() : count·mean·std·min·max·사분위수를 한 번에', 'df["열"].mean() / median() / max() / min() / count() : 하나씩 구하기', 'df["열"].value_counts() : 글자·구간 열의 값별 개수'],
-    skeleton: 'print(df["___"].describe())\nprint("평균", df["___"].___(), "중앙값", df["___"].___())\nprint(df["___"].value_counts())',
+    skeleton: 'print(df["{M}"].describe())\nprint("평균", df["{M}"].___(), "중앙값", df["{M}"].___())\nprint(df["{G}"].value_counts())',
   },
   {
     id: 'missing', name: '[14차시] 결측값 확인·제거·대체',
     asks: ['결측값(NaN)은 어느 열에 몇 개 있고, 전체의 몇 %쯤인가요?', '제거(dropna)한 표와 대체(fillna)한 표를 따로 만들면, 행 수와 평균이 각각 어떻게 달라지나요?', '두 결과를 비교해 보니 우리 질문에는 어느 쪽(또는 그대로 두기)이 맞고, 이유는 무엇인가요?'],
     tools: ['df.isnull().sum() : 열별 결측값(NaN) 개수', 'df_removed = df.dropna() : 제거한 표를 새 변수에. 원본 df는 그대로예요', 'df_filled = df.copy() 다음 df_filled["열"] = df_filled["열"].fillna(값) : 대체한 표를 새 변수에. 이상값이 있으면 평균보다 중앙값', 'df_removed.shape, df_filled["열"].mean() : 두 표의 행 수·평균 비교'],
-    skeleton: 'print(df.___().sum())      # 열별 결측값(NaN) 개수\ndf_removed = df.___()       # 제거한 표\ndf_filled = df.copy()\ndf_filled["___"] = df_filled["___"].fillna(df["___"].___())   # 대체한 표\nprint("원본", df.shape, "→ 제거 후", df_removed.___)\nprint("제거 평균", df_removed["___"].mean(), "/ 대체 평균", df_filled["___"].mean())',
+    skeleton: 'print(df.___().sum())      # 열별 결측값(NaN) 개수\ndf_removed = df.___()       # 제거한 표\ndf_filled = df.copy()\ndf_filled["{M}"] = df_filled["{M}"].fillna(df["{M}"].___())   # 대체한 표\nprint("원본", df.shape, "→ 제거 후", df_removed.___)\nprint("제거 평균", df_removed["{M}"].mean(), "/ 대체 평균", df_filled["{M}"].mean())',
   },
   {
     id: 'newcol', name: '[15차시] 새 열 만들기',
@@ -29,13 +29,13 @@ export const TOPICS = [
     id: 'groupby', name: '[15차시] 그룹별 분석',
     asks: ['무엇을 기준으로 묶고, 어떤 열의 무엇(합계·평균·개수)을 구하고 싶나요?', '그룹마다 몇 명씩 있나요? 그룹 크기가 많이 다르면 합계보다 평균이 공정해요', '계산할 열은 숫자(int·float)인가요?'],
     tools: ['df_use["열"].value_counts() : 그룹이 몇 개, 각각 몇 명인지', 'df_use.groupby("묶는 기준")["계산할 열"].sum() / mean() / count() : 세 가지를 모두 구해서 비교해 봐요', 'df_use.dtypes : 계산할 열이 숫자인지'],
-    skeleton: 'print(df_use["___"].value_counts())   # 그룹 수와 인원\nprint(df_use.groupby("___")["___"].sum())\nprint(df_use.groupby("___")["___"].count())\nresult = df_use.groupby("___")["___"].___()',
+    skeleton: 'print(df_use["{G}"].value_counts())   # 그룹 수와 인원\nprint(df_use.groupby("{G}")["{M}"].___())   # 합계\nprint(df_use.groupby("{G}")["{M}"].___())   # 개수\nresult = df_use.groupby("{G}")["{M}"].___()   # 평균',
   },
   {
     id: 'func', name: '[14·15차시] 함수로 만들기',
     asks: ['여러 번 반복하는 코드가 있나요? (예: 결측값 개수 세기, 그룹별 평균 구하기)', '함수에 넘겨줄 값(매개변수)은 무엇인가요? (예: 표, 묶는 기준 열 이름)', '함수가 돌려줄 값(return)은 무엇인가요?'],
     tools: ['def 함수이름(매개변수): … return 값 : 함수 만들기 (이름은 get_ / count_ 처럼 영어로)', '만든 함수를 다른 기준 열로도 다시 불러 보기 (같은 코드를 반복해서 쓰지 않아도 돼요)'],
-    skeleton: 'def ___(data, col):\n    result = data.groupby(___)["___"].mean()\n    return ___\n\nprint(___(df_use, "___"))   # 다른 기준 열로도 불러 보기',
+    skeleton: 'def ___(data, col):\n    result = data.groupby(___)["{M}"].mean()\n    return ___\n\nprint(___(df_use, "{G}"))   # 다른 기준 열로도 불러 보기',
   },
   {
     id: 'plot', name: '[16차시] 그래프',

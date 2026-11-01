@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { withDefaults, aiTotalOf, isPin, PIN_RULE } from './store.js'
-import { PLAN_STEPS, stepDone, buildPlanText, reviewState, measureName } from './doc.js'
+import { PLAN_STEPS, stepDone, buildPlanText, reviewState, measureName, isGoogleUrl } from './doc.js'
 import { getDs } from './data/meta.js'
 import { CLASSES, PHASES, settingsOf } from './classSettings.js'
 import { backend, SERVER } from './backend.js'
@@ -165,7 +165,14 @@ function Detail({ row, onChange, onClose }) {
 
       {tab === 'plan' && (
         <div>
-          <p className="ad-note">데이터: {ds ? `${ds.id} (${ds.rows}행 × ${ds.columns.length}열)` : '아직 고르지 않음'} · 계산할 것: {measureName(g) || '-'}</p>
+          {/* 학생이 코드 탭에 넣어 둔 우리 조 노트북·공유 폴더를 바로 연다 */}
+          {(isGoogleUrl(g.notebookUrl) || isGoogleUrl(g.folderUrl)) && (
+            <p className="ad-row">
+              {isGoogleUrl(g.notebookUrl) && <a className="ad-btn" href={g.notebookUrl.trim()} target="_blank" rel="noopener noreferrer">조 노트북 열기</a>}
+              {isGoogleUrl(g.folderUrl) && <a className="ad-btn" href={g.folderUrl.trim()} target="_blank" rel="noopener noreferrer">조 공유 폴더 열기</a>}
+            </p>
+          )}
+          <p className="ad-note">데이터:{ds ? `${ds.id} (${ds.rows}행 × ${ds.columns.length}열)` : '아직 고르지 않음'} · 계산할 것: {measureName(g) || '-'}</p>
           <pre className="ad-pre">{planText}</pre>
           <button type="button" className="ad-btn" onClick={copy}>기획안 복사</button>
         </div>

@@ -29,6 +29,7 @@ export const START = {
   rowMeaning: '', usedCols: [],
   missingMethod: '', missingWhy: '', newCol: '', codeDesign: '',
   deck: {}, // 발표 슬라이드 입력 (결과·해석·진로 연결·Q&A 등)
+  notebookUrl: '', folderUrl: '', // 우리 조 Colab 노트북·공유 폴더 주소 (코드 탭에서 바로 열기)
   ai: { used: 0, bonus: 0 }, chats: { plan: [], code: [] }, // 코치 코인(서버가 세고, 기록에는 저장하지 않는다): 쓴 횟수, 선생님이 더 준 개수 / 대화 기록
   updatedAt: 0, // 마지막으로 고친 시각 (관리자 화면에서 "언제 마지막으로 했는지" 보려고)
 }

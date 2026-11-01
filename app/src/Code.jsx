@@ -1,15 +1,20 @@
 ﻿import { useState } from 'react'
 import { TOPICS, ERRORS, SYMPTOMS, TERMS } from './data/hints.js'
 import { TabIntro } from './Guide.jsx'
-import { buildCodeMemo } from './doc.js'
+import { buildCodeMemo, isFreq, isGoogleUrl } from './doc.js'
 import { NOTEBOOK_URL } from './data/meta.js'
 import Results from './Results.jsx'
 
-function Ladder({ topic }) {
+// 빈칸 뼈대의 {G}(묶는 기준)·{M}(계산할 열)을 우리 팀이 기획에서 고른 열 이름으로 바꾼다. 안 골랐으면 ___ 로 둔다.
+// 열 이름은 우리 팀의 선택이라 알려 줘도 되고, 함수 이름 같은 핵심은 여전히 빈칸이다.
+const fillCols = (s, game) => s.replaceAll('{G}', game.groupBy || '___').replaceAll('{M}', isFreq(game) ? '___' : game.measure || '___')
+
+function Ladder({ topic, game }) {
   const [level, setLevel] = useState(1)
   const [tried, setTried] = useState('')
   const next = () => { setLevel(l => l + 1); setTried('') }
   const split = a => a.split(' : ')
+  const personal = topic.skeleton.includes('{G}') || topic.skeleton.includes('{M}')
   return (
     <div className="ladder">
       <div className="step"><b>1단계 · 먼저 생각해 볼 질문</b><ul>{topic.asks.map(a => <li key={a}>{a}</li>)}</ul></div>
@@ -18,7 +23,9 @@ function Ladder({ topic }) {
           <ul>{topic.tools.map(a => { const [k, v] = split(a); return <li key={a}><code>{k}</code>{v && ` ${v}`}</li> })}</ul>
         </div>
       ) : <div className="step locked"><b>2단계 · 쓸 수 있는 도구</b><small>🔒 시도한 것을 적으면 열려요</small></div>}
-      {level >= 3 ? <div className="step"><b>3단계 · 빈칸 뼈대</b><pre className="frame">{topic.skeleton}</pre></div>
+      {level >= 3 ? <div className="step"><b>3단계 · 빈칸 뼈대</b>
+          {personal && game.groupBy && <small className="muted"> 기획에서 고른 열(묶는 기준 <code>{game.groupBy}</code>{!isFreq(game) && game.measure && <>, 계산할 열 <code>{game.measure}</code></>})을 넣어 두었어요</small>}
+          <pre className="frame">{fillCols(topic.skeleton, game)}</pre></div>
         : <div className="step locked"><b>3단계 · 빈칸 뼈대</b><small>🔒 2단계를 읽고 다시 시도해 본 뒤 열려요</small></div>}
       {level < 3 && (
         <div className="unlock">
@@ -91,24 +98,47 @@ function DesignMemo({ game }) {
   )
 }
 
-export default function Code({ game, setDeck }) {
+// 우리 조의 Colab 노트북과 공유 폴더 주소를 저장해 두고 바로 연다 (선생님도 관리자 화면에서 열 수 있다)
+function TeamLinks({ game, patch }) {
+  const link = (url, label) => (isGoogleUrl(url)
+    ? <a className="primary linkbtn" href={url.trim()} target="_blank" rel="noopener noreferrer">{label} (새 창)</a>
+    : null)
+  const bad = u => u.trim() && !isGoogleUrl(u)
+  return (
+    <section className="panel">
+      <h3>우리 조 노트북·폴더</h3>
+      <p className="hint">코드는 12차시부터 써 온 <b>나의 ~_프로젝트.ipynb</b>(우리 조 데이터의 노트북)에 이어서 써요. 노트북과 조 공유 폴더 주소를 한 번 넣어 두면 다음 시간에도 여기서 바로 열 수 있어요.</p>
+      <div className="two-col">
+        <label className="field"><span className="lbl">Colab 노트북 주소</span>
+          <input value={game.notebookUrl} placeholder="https://colab.research.google.com/drive/…" onChange={e => patch({ notebookUrl: e.target.value })} />
+          {bad(game.notebookUrl) && <small className="warn">Colab·구글 드라이브 주소만 넣을 수 있어요</small>}</label>
+        <label className="field"><span className="lbl">조 공유 폴더 주소</span>
+          <input value={game.folderUrl} placeholder="https://drive.google.com/drive/folders/…" onChange={e => patch({ folderUrl: e.target.value })} />
+          {bad(game.folderUrl) && <small className="warn">구글 드라이브 주소만 넣을 수 있어요</small>}</label>
+      </div>
+      <div className="row start">
+        {link(game.notebookUrl, '우리 노트북 열기')}
+        {link(game.folderUrl, '조 공유 폴더 열기')}
+      </div>
+      <p className="muted small">노트북이 없을 때만: <a href={NOTEBOOK_URL} target="_blank" rel="noopener noreferrer">빈 프로젝트 노트북 템플릿</a>을 열고 "Drive에 사본 저장"을 눌러요.</p>
+    </section>
+  )
+}
+
+export default function Code({ game, setDeck, patch }) {
   const [id, setId] = useState(TOPICS[0].id)
   const topic = TOPICS.find(t => t.id === id)
   return (
     <div className="stack">
       <TabIntro>코드는 Colab 노트북에서 실행해요. 이 탭에서는 우리 팀의 설계를 노트북으로 가져가고, 막히면 ① 막힌 부분을 고르고 → ② 힌트를 1단계부터 읽고 → ③ 오류 메시지는 해독기에 붙여 넣고 → ④ 그래도 안 되면 오른쪽 아래 코치에게 물어요. 결과가 나오면 맨 아래 <b>"분석 결과 정리"</b>에 적어요(기획안 4번, 발표 슬라이드에 그대로 들어가요).</TabIntro>
-      <section className="panel">
-        <h3>Colab 노트북 열기</h3>
-        <p className="hint">수업에서 계속 써 온 프로젝트 노트북이 있으면 그걸 열어요. 새로 시작해야 하면 아래 템플릿을 열고 <b>"Drive에 사본 저장"</b>을 눌러 우리 팀 노트북을 만들어요.</p>
-        <a className="primary linkbtn" href={NOTEBOOK_URL} target="_blank" rel="noopener noreferrer">프로젝트 노트북 템플릿 열기 (새 창)</a>
-      </section>
+      <TeamLinks game={game} patch={patch} />
       <DesignMemo game={game} />
       <section className="panel">
         <h3>어떤 부분에서 막혔나요?</h3>
         <div className="chips">
           {TOPICS.map(t => <button key={t.id} aria-pressed={id === t.id} className={id === t.id ? 'on' : ''} onClick={() => setId(t.id)}>{t.name}</button>)}
         </div>
-        <Ladder key={id} topic={topic} />
+        <Ladder key={id} topic={topic} game={game} />
       </section>
       <ErrorDecoder />
       <Results game={game} setDeck={setDeck} />

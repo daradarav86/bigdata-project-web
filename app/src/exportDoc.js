@@ -10,7 +10,9 @@ const LATER = '(분석 뒤에 채워요)'
 
 export async function exportPlanDocx(g) {
   const docx = await import('docx')
-  const blob = await docx.Packer.toBlob(buildPlanDocx(g, docx))
+  // 그래프 이미지를 넣으려면 크기를 먼저 알아야 한다
+  const size = g.deck?.graph ? await imgSize(g.deck.graph) : null
+  const blob = await docx.Packer.toBlob(buildPlanDocx(g, docx, size))
   const name = `${(g.team || '팀').replace(/[\\/:*?"<>|]/g, '')}_기획안.docx`
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -20,8 +22,11 @@ export async function exportPlanDocx(g) {
   return name
 }
 
-export function buildPlanDocx(g, docx) {
-  const { Document, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType } = docx
+const imgSize = src => new Promise(res => { const i = new Image(); i.onload = () => res({ w: i.naturalWidth, h: i.naturalHeight }); i.onerror = () => res(null); i.src = src })
+
+// graphSize: 그래프 이미지의 가로·세로 (없으면 그래프 자리에 안내 문구)
+export function buildPlanDocx(g, docx, graphSize = null) {
+  const { Document, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType, ImageRun } = docx
   const ds = getDs(g.dataset)
   const d = g.deck ?? {}
   const s = statFor(g), c = chartFor(g), f = frameOf(g.frame), mm = missingOf(g.missingMethod)
@@ -101,6 +106,8 @@ export function buildPlanDocx(g, docx) {
       ['행 × 열 (shape)', ds ? `${ds.rows}행 × ${ds.columns.length}열` : ''],
       ['사용할 열', usedCols],
       ['결측값(NaN)이 있는 열 (isnull().sum())', blanks || '없음'],
+      // 13차시 통계 요약 (코드 탭 결과 정리에서 쓴 값)
+      ['숫자 요약 (describe)', d.mean || d.median ? `${measureName(g)}: 개수 ${d.cnt || '___'}, 평균 ${d.mean || '___'}, 중앙값 ${d.median || '___'} → ${d.pick || '___'}${josa(d.pick, '으로(로)')} 요약` : LATER],
     ]),
 
     H1('3. 분석 계획'),
@@ -121,11 +128,14 @@ export function buildPlanDocx(g, docx) {
 
     H1('4. 분석 결과'),
     H3('4-1. 결측값(NaN) 처리'),
-    table([0.3, 0.7], [['항목', '내용'], ['결측값(NaN)이 있던 열과 개수', blanks || '없음'], ['처리 방법', mm ? mm.ko : ''], ['그렇게 정한 이유', g.missingWhy]]),
+    table([0.3, 0.7], [['항목', '내용'], ['결측값(NaN)이 있던 열과 개수', blanks || '없음'], ['처리 방법', mm ? mm.ko : ''], ['그렇게 정한 이유', g.missingWhy], ['제거·대체 비교 (14차시)', d.orig || d.rem || d.rep ? `원본 평균 ${d.orig || '___'} / 제거 ${d.rem || '___'} (${d.remRows || '___'}행) / 대체 ${d.rep || '___'}` : LATER]]),
     H3('4-2. 그룹별 통계 결과표'), ...P('노트북의 result 표를 복사해 붙여 넣으세요.', { italics: true, color: '667085' }), ...P(d.resultTable || LATER),
     H3('4-3. 결과 읽기 (숫자로)'),
     table([0.4, 0.6], [['읽을 것', '우리 팀 결과'], ['가장 큰 그룹과 값', d.hi ? `${d.hi}, ${d.hiVal ?? ''}` : LATER], ['가장 작은 그룹과 값', d.lo ? `${d.lo}, ${d.loVal ?? ''}` : LATER], ['차이 (큰 값 − 작은 값)', d.diffPts ? `${d.diffPts}점 (${d.diffX ?? ''}배)` : LATER], ['예상(1-4)과 같았나요? 놀라운 점은?', d.expectCheck || LATER]]),
-    H3('4-4. 그래프'), ...P('그래프를 오른쪽 클릭 → 이미지 복사 → 아래에 붙여 넣으세요.', { italics: true, color: '667085' }), ...P(LATER),
+    H3('4-4. 그래프'),
+    ...(d.graph && graphSize
+      ? [new Paragraph({ children: [new ImageRun({ type: 'jpg', data: d.graph, transformation: { width: 480, height: Math.round(480 * graphSize.h / graphSize.w) } })] })]
+      : [...P('그래프를 오른쪽 클릭 → 이미지 복사 → 아래에 붙여 넣으세요.', { italics: true, color: '667085' }), ...P(LATER)]),
     H3('4-5. 해석 (3문장, 숫자 넣기)'), ...P(d.hi ? interp : LATER),
     H3('4-6. 한계 (1문장 이상)'), ...P(d.limit ? `다만 ${d.limit} 때문에 이 결과를 모든 대상에게 일반화하기 어렵다.` : LATER),
     H3('4-7. 우리 진로와 연결'),

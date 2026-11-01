@@ -1,6 +1,6 @@
 ﻿import { useRef, useState } from 'react'
 import { getDs, LIMITS } from './data/meta.js'
-import { statFor, missingOf, nameOf, measureName, concernMain, isFreq, usedColsOf, speakersOf } from './doc.js'
+import { statFor, missingOf, nameOf, measureName, concernMain, isFreq, usedColsOf, speakersOf, isGoogleUrl } from './doc.js'
 import { Text } from './ui.jsx'
 import { josa } from './josa.js'
 import { FIELD, shrink } from './deckFields.js'
@@ -147,6 +147,7 @@ export default function Deck({ game, setDeck, go }) {
           <span className="spacer" />
           <button className="ghost" onClick={full}>전체 화면</button>
           <button className="ghost" onClick={() => window.print()}>인쇄 / PDF</button>
+          {isGoogleUrl(game.folderUrl) && <a className="ghost linkbtn" href={game.folderUrl.trim()} target="_blank" rel="noopener noreferrer">조 공유 폴더</a>}
         </div>
         <div className="slidewrap" ref={wrap} tabIndex={0} aria-label={`슬라이드 ${i + 1}: ${cur.label}`}>
           <article className="slide">
@@ -159,6 +160,7 @@ export default function Deck({ game, setDeck, go }) {
           <button className="ghost" disabled={i === 0} onClick={() => setI(i - 1)}>← 이전 장</button>
           <button className="ghost" disabled={i === list.length - 1} onClick={() => setI(i + 1)}>다음 장 →</button>
         </div>
+        <p className="muted small">발표 연습이 끝나면 [인쇄 / PDF] → 대상 "PDF로 저장"으로 저장해서 우리 조 공유 폴더에 올려요.</p>
         <ol className="thumbs">
           {list.map((s, n) => <li key={s.label}><button className={n === i ? 'on' : ''} aria-current={n === i ? 'true' : undefined} onClick={() => setI(n)}><b>{n + 1}</b> {s.label}<small>{s.time}</small></button></li>)}
         </ol>
