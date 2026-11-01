@@ -544,8 +544,9 @@ function MethodStep({ game, patch, go }) {
         {game.codeDesign.trim() && <ul className="checks">{checks.map(c => <li key={c.label} className={c.ok ? 'ok' : 'no'}>{c.ok ? '✓' : '○'} {c.label}</li>)}</ul>}
       </div>
       <div className="mission">
-        <b>3-4. 필수 미션</b>
-        <span>미션 1 데이터 구조 확인</span><span>미션 2 결측값(NaN) 확인·처리</span><span>미션 3 그룹별 통계 1개</span><span>미션 4 그래프 1개</span><span>해석 2문장 + 한계 1문장</span>
+        {/* 패들렛 "차시별 필수 도구"와 같다. 12~17차시 도구를 모두 썼는지가 평가 기준 */}
+        <b>3-4. 필수 미션 (12~17차시 도구를 모두 써요)</b>
+        <span>[12] 구조 확인 head·shape·columns·info()</span><span>[13] 통계 요약 describe()·평균과 중앙값·value_counts()</span><span>[14] 결측값 확인 → 제거·대체 비교 (df_removed, df_filled)</span><span>[15] 새 열 1개 + groupby의 sum·mean·count</span><span>[14·15] 함수로 만들기 (def, return)</span><span>[16] 그래프 1개</span><span>[17] 해석 2~3문장 + 한계 1문장</span>
       </div>
     </>
   )

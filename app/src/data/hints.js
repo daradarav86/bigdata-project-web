@@ -1,39 +1,51 @@
-﻿// 고정 힌트. project_template.ipynb의 미션 0~4·해석 쓰기와 같은 용어·변수명(df, df_use, result)·따옴표 스타일을 쓴다.
+﻿// 고정 힌트. 패들렛 "차시별 필수 도구"(12~17차시)의 순서를 따르고, 노트북과 같은 변수명(df, df_use, df_removed, df_filled, result)·따옴표 스타일을 쓴다.
 // 단계: 1 생각할 질문 → 2 필요한 도구 → 3 빈칸 뼈대. 정답 코드는 어디에도 없다.
 export const TOPICS = [
   {
-    id: 'explore', name: '미션 1 · 구조 확인',
+    id: 'explore', name: '[12차시] 구조 확인',
     asks: ['한 행은 무엇을 뜻하나요? (예: 학생 1명, 영화 1편)', '우리가 쓸 열 3~4개는 무엇이고, 숫자 열인가요 글자 열인가요?', '값이 비어 있는 열이 있나요?'],
     tools: ['df.shape : (행 수, 열 수)', 'df.columns : 열 이름 (복사해서 쓰면 오타가 없어요)', 'df.info() : 자료형(Dtype)과 비어 있지 않은 값의 개수. int·float는 숫자, object는 글자', 'df.head() : 앞부분 훑어보기'],
     skeleton: 'print(df.___)      # (행 수, 열 수)\nprint(df.___)      # 열 이름\ndf.___()           # 자료형과 비어 있지 않은 값의 개수',
   },
   {
-    id: 'missing', name: '미션 2 · 결측값(NaN)',
-    asks: ['결측값(NaN)은 어느 열에 몇 개 있고, 전체의 몇 %쯤인가요?', '그대로 둘지, 제거할지, 채울지 — 세 가지 중 무엇이 우리 질문에 맞고 이유는 무엇인가요?', '제거하면 행이 얼마나 줄어드나요?'],
-    tools: ['df.isnull().sum() : 열별 결측값(NaN) 개수', 'df.dropna() : 결측값이 있는 행을 모두 제거한 표. 원본 df는 그대로예요', 'df.copy() : 그대로 두고 복사본 쓰기', 'fillna() : 채우기. 0이나 평균으로 성급히 채우지 말고 근거가 있을 때만'],
-    skeleton: 'print(df.___().sum())      # 열별 결측값(NaN) 개수\ndf_removed = df.___()       # 결측값이 있는 행 제거\nprint("원본", df.shape, "→ 제거 후", df_removed.___)\ndf_use = ___                # 분석에 쓸 표: df.copy() 또는 df_removed',
+    id: 'stats', name: '[13차시] 통계 요약',
+    asks: ['계산할 숫자 열의 평균과 중앙값은 비슷한가요, 많이 다른가요? 다르다면 왜일까요?', 'describe()의 count가 shape의 행 수보다 작다면 무엇 때문일까요?', '묶는 기준 열에는 어떤 값이 몇 개씩 있나요?'],
+    tools: ['df["열"].describe() : count·mean·std·min·max·사분위수를 한 번에', 'df["열"].mean() / median() / max() / min() / count() : 하나씩 구하기', 'df["열"].value_counts() : 글자·구간 열의 값별 개수'],
+    skeleton: 'print(df["___"].describe())\nprint("평균", df["___"].___(), "중앙값", df["___"].___())\nprint(df["___"].value_counts())',
   },
   {
-    id: 'groupby', name: '미션 3 · 그룹별 분석',
-    asks: ['무엇을 기준으로 묶고, 어떤 열의 무엇(평균 등)을 구하고 싶나요?', '묶는 기준에 그룹이 몇 개이고 각 그룹에 몇 명씩 있나요?', '계산할 열은 숫자(int·float)인가요?'],
-    tools: ['df_use["열"].value_counts() : 그룹이 몇 개, 각각 몇 명인지', 'df_use.dtypes : 계산할 열이 숫자인지', 'df_use.groupby("묶는 기준")["계산할 열"].mean() : 묶는 기준 → 계산할 열 → 통계. mean · median · max · min · count 중에서 골라요', 'df_use["열"].value_counts() : 숫자 열 없이 그룹마다 개수(빈도)만 셀 때'],
-    skeleton: 'print(df_use["___"].value_counts())   # 그룹 수와 인원\nresult = df_use.groupby("___")["___"].___()\ndisplay(result)',
+    id: 'missing', name: '[14차시] 결측값 확인·제거·대체',
+    asks: ['결측값(NaN)은 어느 열에 몇 개 있고, 전체의 몇 %쯤인가요?', '제거(dropna)한 표와 대체(fillna)한 표를 따로 만들면, 행 수와 평균이 각각 어떻게 달라지나요?', '두 결과를 비교해 보니 우리 질문에는 어느 쪽(또는 그대로 두기)이 맞고, 이유는 무엇인가요?'],
+    tools: ['df.isnull().sum() : 열별 결측값(NaN) 개수', 'df_removed = df.dropna() : 제거한 표를 새 변수에. 원본 df는 그대로예요', 'df_filled = df.copy() 다음 df_filled["열"] = df_filled["열"].fillna(값) : 대체한 표를 새 변수에. 이상값이 있으면 평균보다 중앙값', 'df_removed.shape, df_filled["열"].mean() : 두 표의 행 수·평균 비교'],
+    skeleton: 'print(df.___().sum())      # 열별 결측값(NaN) 개수\ndf_removed = df.___()       # 제거한 표\ndf_filled = df.copy()\ndf_filled["___"] = df_filled["___"].fillna(df["___"].___())   # 대체한 표\nprint("원본", df.shape, "→ 제거 후", df_removed.___)\nprint("제거 평균", df_removed["___"].mean(), "/ 대체 평균", df_filled["___"].mean())',
   },
   {
-    id: 'newcol', name: '새 열 만들기 (선택)',
+    id: 'newcol', name: '[15차시] 새 열 만들기',
     asks: ['기존 열 중 무엇과 무엇을 계산하면 내 질문에 더 잘 맞는 값이 될까요?', '그 계산은 행마다 하나씩 값이 나오나요?', '추천 짝 표의 "새 열 아이디어"가 우리 데이터에 있나요?'],
     tools: ['df_use["새열"] = df_use["열1"] * df_use["열2"] : 열끼리 계산해서 새 열 만들기', '만든 뒤 df_use.head() 로 새 열이 생겼는지 확인'],
     skeleton: 'df_use["새열"] = df_use["___"] ___ df_use["___"]\ndisplay(df_use.head())',
   },
   {
-    id: 'plot', name: '미션 4 · 그래프',
+    id: 'groupby', name: '[15차시] 그룹별 분석',
+    asks: ['무엇을 기준으로 묶고, 어떤 열의 무엇(합계·평균·개수)을 구하고 싶나요?', '그룹마다 몇 명씩 있나요? 그룹 크기가 많이 다르면 합계보다 평균이 공정해요', '계산할 열은 숫자(int·float)인가요?'],
+    tools: ['df_use["열"].value_counts() : 그룹이 몇 개, 각각 몇 명인지', 'df_use.groupby("묶는 기준")["계산할 열"].sum() / mean() / count() : 세 가지를 모두 구해서 비교해 봐요', 'df_use.dtypes : 계산할 열이 숫자인지'],
+    skeleton: 'print(df_use["___"].value_counts())   # 그룹 수와 인원\nprint(df_use.groupby("___")["___"].sum())\nprint(df_use.groupby("___")["___"].count())\nresult = df_use.groupby("___")["___"].___()',
+  },
+  {
+    id: 'func', name: '[14·15차시] 함수로 만들기',
+    asks: ['여러 번 반복하는 코드가 있나요? (예: 결측값 개수 세기, 그룹별 평균 구하기)', '함수에 넘겨줄 값(매개변수)은 무엇인가요? (예: 표, 묶는 기준 열 이름)', '함수가 돌려줄 값(return)은 무엇인가요?'],
+    tools: ['def 함수이름(매개변수): … return 값 : 함수 만들기 (이름은 get_ / count_ 처럼 영어로)', '만든 함수를 다른 기준 열로도 다시 불러 보기 (같은 코드를 반복해서 쓰지 않아도 돼요)'],
+    skeleton: 'def ___(data, col):\n    result = data.groupby(___)["___"].mean()\n    return ___\n\nprint(___(df_use, "___"))   # 다른 기준 열로도 불러 보기',
+  },
+  {
+    id: 'plot', name: '[16차시] 그래프',
     asks: ['보여 주고 싶은 것은 그룹 비교(막대)인가요, 변화(선)인가요?', '막대가 너무 많아 읽기 어렵지는 않나요?', '제목과 축 이름만 봐도 무엇을 비교한 그래프인지 알 수 있나요?'],
     // 16차시 노트북과 같은 모양: plt.bar / plt.plot(result.index, result.values), 한글은 koreanize_matplotlib
     tools: ['plt.bar(result.index, result.values) : 막대 (x축은 result.index, y축은 result.values. 괄호를 붙이지 않아요)', 'plt.plot(result.index, result.values) : 선 (연도·월처럼 순서가 있을 때)', 'plt.title / plt.xlabel / plt.ylabel : 제목과 축 이름 붙이기. 한글은 노트북 맨 위 koreanize_matplotlib를 실행해야 깨지지 않아요', 'result.head(10) : 막대가 너무 많을 때 앞 10개만', 'plt.show() : 그래프 보이기'],
     skeleton: 'plt.___(result.______, result.______)\nplt.title("___")     # 예: 공부 시간 구간별 G3 평균\nplt.xlabel("___")    # 묶는 기준\nplt.ylabel("___")    # 계산한 값\nplt.show()',
   },
   {
-    id: 'interpret', name: '해석 쓰기',
+    id: 'interpret', name: '[17차시] 해석 쓰기',
     asks: ['어느 그룹이 가장 높고 가장 낮았나요? 값은 얼마인가요?', '두 집단의 차이는 몇 점(또는 몇 배)인가요?', '이 결과가 "함께 움직이는 경향"을 말해 주나요, 아니면 원인을 말해 주나요?', '이 결과를 모든 대상에게 일반화하기 어려운 이유는 무엇인가요?'],
     tools: ['result.idxmax() / result.idxmin() : 가장 큰·작은 그룹의 이름', 'result.max() / result.min() : 가장 큰·작은 값', '틀: ① 사실 → ② 비교 → ③ 의미 → 한계'],
     skeleton: '① 사실: ___별 ___의 평균은 ___이(가) 가장 높고(___), ___이(가) 가장 낮았다(___).\n② 비교: 두 집단의 차이는 ___로, ___배(또는 ___점) 정도였다.\n③ 의미: 이는 ___ 와(과) ___ 가 함께 움직이는 경향이 있음을 보여 준다. (원인이라고 단정하지 않기)\n한계: 다만 ___ 때문에 일반화하기 어렵다.',

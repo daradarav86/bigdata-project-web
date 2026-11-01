@@ -37,6 +37,8 @@ export function reviewQuestion(text, picks) {
 
 // AI 서버가 연결되기 전 데모 응답. 실제 응답과 같은 규칙(되묻기·도구 이름·빈칸까지만)을 따른다.
 const KEYWORDS = {
+  func: /(함수|def|return|매개변수)/i,
+  stats: /(describe|중앙값|median|통계 요약|value_counts)/i,
   missing: /(결측|빈칸|nan|null|fillna|dropna|isnull)/i,
   groupby: /(groupby|묶|그룹|평균|합계|개수|value_counts)/i,
   newcol: /(새\s*열|열\s*추가|계산)/i,

@@ -30,8 +30,14 @@ export default function Results({ game, setDeck }) {
       <h3>분석 결과 정리 <small className="muted">기획안 4번 · 노트북 결과를 보며 적어요 ({done}/{RESULT_KEYS.length})</small></h3>
       <p className="hint">여기 적은 결과는 발표 슬라이드(4~6장)에 그대로 들어가요. 숫자는 노트북 결과에서 그대로 옮겨 적어요.</p>
 
-      <h4>4-1. 결측값(NaN) 처리</h4>
-      <p className="small">{mm ? <>기획에서 <b>{mm.ko}</b>로 정했어요. {game.missingWhy}</> : '아직 기획의 "분석 계획"에서 정하지 않았어요.'} 노트북에서 해 보니 다르면 "기획" 탭에서 고쳐요.</p>
+      <h4>[13차시] 숫자 요약 <small className="muted">계산할 열의 describe() 결과 · 발표 3장</small></h4>
+      <div className="two-col">{field('cnt')}{field('pick')}</div>
+      <div className="two-col">{field('mean')}{field('median')}</div>
+
+      <h4>4-1. 결측값(NaN) 처리 <small className="muted">[14차시] 제거·대체를 비교해 봐요 · 발표 5장</small></h4>
+      <p className="small">{mm ? <>기획에서 <b>{mm.ko}</b>로 정했어요. {game.missingWhy}</> : '아직 기획의 "분석 계획"에서 정하지 않았어요.'} 노트북에서 비교해 보니 다르면 "기획" 탭에서 고쳐요.</p>
+      <div className="two-col">{field('orig')}{field('rem')}</div>
+      <div className="two-col">{field('remRows')}{field('rep')}</div>
 
       {field('resultTable', 5)}
 
