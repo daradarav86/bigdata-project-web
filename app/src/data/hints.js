@@ -28,8 +28,9 @@ export const TOPICS = [
   {
     id: 'plot', name: '미션 4 · 그래프',
     asks: ['보여 주고 싶은 것은 그룹 비교(막대)인가요, 변화(선)인가요?', '막대가 너무 많아 읽기 어렵지는 않나요?', '제목과 축 이름만 봐도 무엇을 비교한 그래프인지 알 수 있나요?'],
-    tools: ['result.plot(kind="bar") : 막대 / kind="line" : 선 / kind="hist" : 히스토그램 / kind="pie" : 원', 'plt.title / plt.xlabel / plt.ylabel : 이름 붙이기. Colab에서는 한글이 깨질 수 있어 영어로 써요', 'result.head(10) : 앞 10개만 그리기', 'plt.show() : 그래프 보이기'],
-    skeleton: 'result.plot(kind="___")\nplt.title("___")     # 영어로. 예: Mean score by study time\nplt.xlabel("___")    # 묶는 기준\nplt.ylabel("___")    # 계산한 값\nplt.show()',
+    // 16차시 노트북과 같은 모양: plt.bar / plt.plot(result.index, result.values), 한글은 koreanize_matplotlib
+    tools: ['plt.bar(result.index, result.values) : 막대 (x축은 result.index, y축은 result.values. 괄호를 붙이지 않아요)', 'plt.plot(result.index, result.values) : 선 (연도·월처럼 순서가 있을 때)', 'plt.title / plt.xlabel / plt.ylabel : 제목과 축 이름 붙이기. 한글은 노트북 맨 위 koreanize_matplotlib를 실행해야 깨지지 않아요', 'result.head(10) : 막대가 너무 많을 때 앞 10개만', 'plt.show() : 그래프 보이기'],
+    skeleton: 'plt.___(result.______, result.______)\nplt.title("___")     # 예: 공부 시간 구간별 G3 평균\nplt.xlabel("___")    # 묶는 기준\nplt.ylabel("___")    # 계산한 값\nplt.show()',
   },
   {
     id: 'interpret', name: '해석 쓰기',
@@ -53,7 +54,8 @@ export const TERMS = [
 // 증상으로 찾기 (노트북 "막히면?" 표 + 자주 하는 막힘)
 export const SYMPTOMS = [
   { q: '결과가 NaN이거나 비어 있어요', a: ['계산할 열이 숫자 열인지 df_use.dtypes 로 확인', '그 열에 결측값(NaN)이 너무 많지 않은지 df.isnull().sum() 으로 확인'] },
-  { q: '그래프가 안 그려져요', a: ['계산할 열이 숫자인지 확인', 'result 가 만들어졌는지 확인 (위 셀부터 순서대로 실행)'] },
+  { q: '그래프가 안 그려져요', a: ['계산할 열이 숫자인지 확인', 'result 가 만들어졌는지 확인 (위 셀부터 순서대로 실행)', 'import matplotlib.pyplot as plt 를 실행했는지 확인'] },
+  { q: '그래프의 한글이 □로 깨져요', a: ['노트북 맨 위에서 !pip install -q koreanize-matplotlib 와 import koreanize_matplotlib 를 실행', '그래도 깨지면 [런타임 → 세션 다시 시작] 후 처음부터 다시 실행', '급하면 제목·축 이름을 영어로 써요'] },
   { q: '막대가 너무 많아요', a: ['result.head(10) 으로 앞 10개만 그려 보기'] },
   { q: '셀을 지웠더니 오류가 나요', a: ['"모두 실행"이 아니라 위에서부터 한 칸씩 다시 실행해요', '변수(df, df_use, result)를 만드는 셀이 실행됐는지 확인'] },
   { q: '열 이름이 길어서 자꾸 틀려요', a: ['print(df.columns) 로 출력한 뒤 복사해서 붙여 넣기', '이름 끝의 공백까지 같은지 확인'] },

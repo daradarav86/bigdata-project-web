@@ -58,10 +58,10 @@ export function buildPlanDocx(g, docx) {
   const blanks = ds ? ds.columns.filter(c => c.missing > 0).map(c => `${c.name} ${c.missing}개`).join(', ') : ''
   const spk = speakersOf(d)
   const interp = [
-    // 그룹·열 이름은 영어가 많아 받침을 알 수 없으므로 바로 뒤에 조사가 오지 않게 쓴다 (발표 5장과 같은 문장)
-    `① 사실: ${g.groupBy}별 ${isFreq(g) ? '개수(빈도)는' : `${g.measure}의 ${s.topic}`} 가장 높은 그룹 ${d.hi || '___'}(${d.hiVal || '___'}), 가장 낮은 그룹 ${d.lo || '___'}(${d.loVal || '___'}).`,
-    `② 비교: 두 집단의 차이는 ${d.diffPts ? d.diffPts + '점' : '___'}로, ${d.diffX || '___'}배 정도였다.`,
-    `③ 의미: 이는 두 값(${d.m1 || g.groupBy}, ${d.m2 || measureName(g)})이 함께 움직이는 경향이 있음을 보여 준다.`,
+    // 기획안 4-5 해석 틀과 같은 문장 (발표 5장과 같다). 조사는 한글·숫자로 끝나면 맞춰 고르고 영어면 "이(가)"로 둔다
+    `① 사실: ${g.groupBy}별 ${isFreq(g) ? '개수(빈도)는' : `${g.measure}의 ${s.topic}`} ${d.hi || '___'}${josa(d.hi, '이(가)')} 가장 높고(${d.hiVal || '___'}), ${d.lo || '___'}${josa(d.lo, '이(가)')} 가장 낮았다(${d.loVal || '___'}).`,
+    `② 비교: 두 집단의 차이는 ${d.diffPts ? `${d.diffPts}점으로` : '___(으)로'}, ${d.diffX || '___'}배 정도였다.`,
+    `③ 의미: 이는 ${d.m1 || g.groupBy}${josa(d.m1 || g.groupBy, '와(과)')} ${d.m2 || measureName(g)}${josa(d.m2 || measureName(g), '이(가)')} 함께 움직이는 경향이 있음을 보여 준다.`,
   ].join('\n')
 
   const body = [
@@ -122,9 +122,9 @@ export function buildPlanDocx(g, docx) {
     H1('4. 분석 결과'),
     H3('4-1. 결측값(NaN) 처리'),
     table([0.3, 0.7], [['항목', '내용'], ['결측값(NaN)이 있던 열과 개수', blanks || '없음'], ['처리 방법', mm ? mm.ko : ''], ['그렇게 정한 이유', g.missingWhy]]),
-    H3('4-2. 그룹별 통계 결과표'), ...P('노트북의 result 표를 복사해 붙여 넣으세요.', { italics: true, color: '667085' }), ...P(LATER),
+    H3('4-2. 그룹별 통계 결과표'), ...P('노트북의 result 표를 복사해 붙여 넣으세요.', { italics: true, color: '667085' }), ...P(d.resultTable || LATER),
     H3('4-3. 결과 읽기 (숫자로)'),
-    table([0.4, 0.6], [['읽을 것', '우리 팀 결과'], ['가장 큰 그룹과 값', d.hi ? `${d.hi}, ${d.hiVal ?? ''}` : LATER], ['가장 작은 그룹과 값', d.lo ? `${d.lo}, ${d.loVal ?? ''}` : LATER], ['차이 (큰 값 − 작은 값)', d.diffPts ? `${d.diffPts}점 (${d.diffX ?? ''}배)` : LATER], ['예상(1-4)과 같았나요? 놀라운 점은?', LATER]]),
+    table([0.4, 0.6], [['읽을 것', '우리 팀 결과'], ['가장 큰 그룹과 값', d.hi ? `${d.hi}, ${d.hiVal ?? ''}` : LATER], ['가장 작은 그룹과 값', d.lo ? `${d.lo}, ${d.loVal ?? ''}` : LATER], ['차이 (큰 값 − 작은 값)', d.diffPts ? `${d.diffPts}점 (${d.diffX ?? ''}배)` : LATER], ['예상(1-4)과 같았나요? 놀라운 점은?', d.expectCheck || LATER]]),
     H3('4-4. 그래프'), ...P('그래프를 오른쪽 클릭 → 이미지 복사 → 아래에 붙여 넣으세요.', { italics: true, color: '667085' }), ...P(LATER),
     H3('4-5. 해석 (3문장, 숫자 넣기)'), ...P(d.hi ? interp : LATER),
     H3('4-6. 한계 (1문장 이상)'), ...P(d.limit ? `다만 ${d.limit} 때문에 이 결과를 모든 대상에게 일반화하기 어렵다.` : LATER),

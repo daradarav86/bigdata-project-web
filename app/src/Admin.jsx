@@ -50,7 +50,7 @@ function Stat({ label, value, sub }) {
 }
 
 // 수업 중에 쓰는 반별 설정: 코치(API)를 막을지 풀지, 지금 어느 단계(기획안 / 코드 / 발표)인지, 반 전체 코인
-// 학생 화면은 약 8초마다 설정을 받아 오므로 바꾸면 곧 반영된다.
+// 학생 화면은 약 30초마다(화면을 보고 있을 때) 설정을 받아 오므로 바꾸면 30초 안에 반영된다.
 function ClassPanel({ rows, settings: all, onChange, filter, setFilter }) {
   const [coins, setCoins] = useState(3)
   const [msg, setMsg] = useState('')
@@ -98,7 +98,7 @@ function ClassPanel({ rows, settings: all, onChange, filter, setFilter }) {
           )
         })}
       </div>
-      <p className="ad-note">{msg || '단계를 바꾸면 그 반 학생 화면에서 잠긴 탭이 열리고 닫혀요. 코치를 닫으면 코인은 줄지 않고, 보낼 수 없을 뿐이에요.'}</p>
+      <p className="ad-note">{msg || '단계를 바꾸면 30초 안에 그 반 학생 화면에서 잠긴 탭이 열리고 닫혀요. 코치를 닫으면 코인은 줄지 않고, 보낼 수 없을 뿐이에요.'}</p>
     </section>
   )
 }
@@ -284,7 +284,8 @@ export default function Admin() {
   useEffect(() => {
     if (!authed) return undefined
     refresh()
-    const id = setInterval(refresh, 15000)
+    // 30초마다, 이 탭을 보고 있을 때만 새로 읽는다 (켜 둔 채 둔 관리자 탭이 서버를 계속 부르지 않게)
+    const id = setInterval(() => { if (document.visibilityState === 'visible') refresh() }, 30000)
     return () => clearInterval(id)
   }, [authed, refresh])
   useEffect(() => { document.title = '관리자 · 원묵고 빅데이터원리탐구 도우미' }, [])

@@ -3,24 +3,7 @@ import { getDs, LIMITS } from './data/meta.js'
 import { statFor, missingOf, nameOf, measureName, concernMain, isFreq, usedColsOf, speakersOf } from './doc.js'
 import { Text } from './ui.jsx'
 import { josa } from './josa.js'
-
-// 그래프 이미지를 줄여서 저장한다 (브라우저 저장 용량 보호)
-function shrink(file, max = 1000) {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      const k = Math.min(1, max / img.width)
-      const c = document.createElement('canvas')
-      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k)
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height)
-      URL.revokeObjectURL(url)
-      resolve(c.toDataURL('image/jpeg', 0.82))
-    }
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지를 읽지 못했어요.')) }
-    img.src = url
-  })
-}
+import { FIELD, shrink } from './deckFields.js'
 
 // 비어 있으면 빨간 빈칸 박스, 있으면 굵은 글씨
 const V = ({ v, ph = '' }) => (v && String(v).trim() ? <b className="v">{v}</b> : <span className="blank">{ph || '    '}</span>)
@@ -90,10 +73,10 @@ function slides({ g, d, ds }) {
       view: (
         <>
           <Title kw="해석" rest="과 한계" />
-          {/* 그룹 이름·열 이름은 영어(yes, GP, studytime)가 많아 받침을 알 수 없으므로, 바로 뒤에 조사가 오지 않게 쓴다 */}
-          <p>① <V v={g.groupBy} />별 {isFreq(g) ? <>개수(빈도)는</> : <><V v={g.measure} />의 {s.topic}</>} 가장 높은 그룹 <V v={d.hi} />(<V v={d.hiVal} />), 가장 낮은 그룹 <V v={d.lo} />(<V v={d.loVal} />).</p>
+          {/* 기획안 4-5 해석 틀과 같은 문장. 조사는 한글·숫자로 끝나면 맞춰 고르고, 영어(yes, GP)면 학습지처럼 "이(가)"로 둔다 */}
+          <p>① <V v={g.groupBy} />별 {isFreq(g) ? <>개수(빈도)는</> : <><V v={g.measure} />의 {s.topic}</>} <V v={d.hi} />{josa(d.hi, '이(가)')} 가장 높고(<V v={d.hiVal} />), <V v={d.lo} />{josa(d.lo, '이(가)')} 가장 낮았다(<V v={d.loVal} />).</p>
           <p>② 두 집단의 차이는 <V v={d.diffPts && `${d.diffPts}점`} />이다.</p>
-          <p>③ 이는 두 값(<V v={d.m1 || g.groupBy} />, <V v={d.m2 || measureName(g)} />)이 함께 움직이는 경향을 보여 준다.</p>
+          <p>③ 이는 <V v={d.m1 || g.groupBy} />{josa(d.m1 || g.groupBy, '와(과)')} <V v={d.m2 || measureName(g)} />{josa(d.m2 || measureName(g), '이(가)')} 함께 움직이는 경향을 보여 준다.</p>
           <p>한계: 다만 <V v={d.limit} ph="이유" /> 때문에 이 결과를 모든 대상에게 일반화하기 어렵다.</p>
           <p className="small">결측값(NaN) 처리 비교: 원본 <V v={d.orig} /> / 제거 <V v={d.rem} />(<V v={d.remRows} />행) / 대체 <V v={d.rep} /> → <V v={missingOf(g.missingMethod)?.ko} />, 이유: <V v={g.missingWhy} /></p>
         </>
@@ -127,39 +110,6 @@ function slides({ g, d, ds }) {
       fields: ['q1', 'a1', 'q2', 'a2'],
     },
   ]
-}
-
-// 입력칸 정의: 키 → [라벨, 힌트, 줄 수]
-const FIELD = {
-  know: ['이 진로에서 알아야 하는 것', '예) 학생의 공부 방법별 성적'],
-  wonder: ['그래서 궁금했던 것', '비워 두면 "진로 장면"의 ①이 들어가요'],
-  cnt: ['값의 개수 (count)', '노트북 describe() 결과'],
-  mean: ['평균', ''],
-  median: ['중앙값', ''],
-  pick: ['요약에 쓸 것', '평균 / 중앙값 중 하나'],
-  hi: ['가장 큰 그룹', '예) 구간 3'],
-  hiVal: ['그 값', '예) 13.36점'],
-  lo: ['가장 작은 그룹', ''],
-  loVal: ['그 값', ''],
-  diffPts: ['차이 (큰 값 − 작은 값)', '숫자만, 예) 2.5'],
-  diffX: ['몇 배', '예) 1.23'],
-  m1: ['③ 함께 움직이는 것 (앞)', '비워 두면 묶는 기준이 들어가요'],
-  m2: ['③ 함께 움직이는 것 (뒤)', '비워 두면 계산할 열이 들어가요'],
-  limit: ['한계: 일반화하기 어려운 이유', '아래 후보를 눌러 가져올 수 있어요'],
-  orig: ['결측값(NaN) 처리 비교: 원본 평균', ''],
-  rem: ['제거했을 때 평균', ''],
-  remRows: ['제거 후 행 수', ''],
-  rep: ['대체했을 때 평균', ''],
-  job: ['직업', '비워 두면 진로 키워드가 들어가요'],
-  doing: ['그 직업이 하는 일', ''],
-  use: ['이 결과를 어떻게 참고할 수 있나', ''],
-  careful: ['함께 확인해야 할 것', ''],
-  next: ['다음에 알고 싶은 것', ''],
-  closing: ['마무리 한 문장', '팀원이 함께 말해요'],
-  q1: ['예상 질문 1', '예) 구간 4가 왜 구간 3보다 낮나요?'],
-  a1: ['우리의 답 1', '모르면 "이 데이터로는 알 수 없어요"라고 말해도 좋아요'],
-  q2: ['예상 질문 2', ''],
-  a2: ['우리의 답 2', ''],
 }
 
 export default function Deck({ game, setDeck, go }) {

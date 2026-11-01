@@ -1,0 +1,18 @@
+# Supabase 무료 프로젝트는 7일 동안 요청이 없으면 멈춘다(pause).
+# 방학·시험 기간처럼 수업이 비어도 사이트가 멈추지 않도록 3일마다 서버를 한 번 부른다.
+# (GitHub는 저장소에 60일 동안 변경이 없으면 예약 실행을 끈다. 그때는 Actions 탭에서 다시 켠다.)
+name: keep-supabase-awake
+
+on:
+  schedule:
+    - cron: '0 0 */3 * *' # 3일마다 09:00 KST
+  workflow_dispatch: # Actions 탭에서 직접 실행할 수도 있다
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase api function
+        run: |
+          curl -fsS -X POST https://ztwozxxtcpchredgukqi.supabase.co/functions/v1/api \
+            -H 'Content-Type: application/json' -d '{"action":"ping"}'

@@ -11,6 +11,8 @@ const MAX_FAILS = 5 // 비밀번호를 연속으로 이만큼 틀리면
 const LOCK_MIN = 5 // 이 시간(분) 동안 잠근다
 
 const teamKey = (cls: string, no: number) => `${cls} ${no}조`
+// 그래프 이미지의 짧은 표식 (app/src/backend.js의 graphTag와 같은 방식)
+const graphTag = (s: string) => (s ? `${s.length}:${s.slice(-32)}` : '')
 const validTeam = (cls: unknown, no: unknown) => typeof cls === 'string' && CLASS_RE.test(cls) && Number.isInteger(no) && (no as number) >= 1 && (no as number) <= 10
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 
@@ -64,7 +66,13 @@ async function student(client: ReturnType<typeof db>, action: string, b: Record<
     // 가진 기록과 같은 판(rev)이면 기록은 다시 보내지 않는다 (그래프 이미지가 커서)
     if (b.rev === team.rev) return json(await view(client, team, undefined))
     const { data } = await client.from('teams').select('game').eq('key', team.key).single()
-    return json(await view(client, team, data!.game))
+    const game = data!.game
+    // 브라우저가 이미 같은 그래프를 가지고 있으면(표식이 같으면) 이미지는 빼고 보낸다. 전송량의 대부분이 그래프라서.
+    const graph = game.deck?.graph ?? ''
+    if (graph && b.graphTag === graphTag(graph)) {
+      return json({ ...(await view(client, team, { ...game, deck: { ...game.deck, graph: undefined } })), graphKept: true })
+    }
+    return json(await view(client, team, game))
   }
 
   if (action === 'save') {
@@ -169,6 +177,12 @@ Deno.serve(async req => {
     const b = JSON.parse(text)
     const action = typeof b?.action === 'string' ? b.action : ''
     const client = db()
+    // 잠자기 방지: Supabase 무료 프로젝트는 7일 동안 요청이 없으면 멈추므로, GitHub Actions가 며칠마다 이걸 부른다
+    if (action === 'ping') {
+      const { error } = await client.from('class_settings').select('cls').limit(1)
+      if (error) throw error
+      return json({ ok: true })
+    }
     if (action.startsWith('admin_')) {
       const want = Deno.env.get('ADMIN_PASSWORD')
       const got = req.headers.get('x-admin-password') ?? ''

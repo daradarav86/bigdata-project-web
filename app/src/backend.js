@@ -37,11 +37,15 @@ export function applyPatch(game, patch) {
   return g
 }
 
+// 그래프 이미지의 짧은 표식 (서버 supabase/functions/api의 graphTag와 같은 방식)
+export const graphTag = s => (s ? `${s.length}:${s.slice(-32)}` : '')
+
 // ---------- 서버 ----------
 const remote = {
   create: ({ cls, no, pin, game }) => post('api', { action: 'create', cls, no, pin, game }),
   join: (cls, no, pin) => post('api', { action: 'join', cls, no, pin }),
-  sync: (token, rev) => post('api', { action: 'sync', token, rev }),
+  // graphTag: 이 브라우저가 가진 그래프의 표식. 서버 것과 같으면 서버는 이미지를 빼고 보낸다 (graphKept: true)
+  sync: (token, rev, tag) => post('api', { action: 'sync', token, rev, graphTag: tag }),
   save: (token, patch) => post('api', { action: 'save', token, patch }),
   remove: (token, pin) => post('api', { action: 'remove', token, pin }),
   admin: (pass, action, body = {}) => post('api', { action: `admin_${action}`, ...body }, { 'x-admin-password': pass }),

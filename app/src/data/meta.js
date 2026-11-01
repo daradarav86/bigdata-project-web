@@ -21,6 +21,7 @@ export const FRAMES = [
 // 수업에서 배운 통계 5가지 (+ 기타). 숫자 열에는 어느 것이나 쓸 수 있고, "빈도"는 열 없이 개수만 센다.
 export const STATS = [
   { id: 'mean', ko: '평균', topic: '평균은', obj: '평균을', fn: 'mean()', desc: '한 명·하나당 얼마나 (전체 합 ÷ 개수)' },
+  { id: 'sum', ko: '합계', topic: '합계는', obj: '합계를', fn: 'sum()', desc: '전체로 얼마나 (총량 비교. 예: 종류별 매출액 합계)' },
   { id: 'median', ko: '중앙값', topic: '중앙값은', obj: '중앙값을', fn: 'median()', desc: '크기순으로 놓았을 때 가운데 값. 아주 큰·작은 값의 영향이 적어요' },
   { id: 'max', ko: '최댓값', topic: '최댓값은', obj: '최댓값을', fn: 'max()', desc: '가장 큰 값' },
   { id: 'min', ko: '최솟값', topic: '최솟값은', obj: '최솟값을', fn: 'min()', desc: '가장 작은 값' },
@@ -28,13 +29,12 @@ export const STATS = [
 ]
 
 // 그래프 종류. tokens: 코드 설계에 이 글자가 들어 있으면 그 그래프를 쓴 것으로 본다.
+// 16차시 노트북처럼 plt.bar / plt.plot 으로 그린다. (산점도·원그래프는 수업에서 안 배워서 뺐다)
 // ※ 수업에서 배운 그래프에 맞게 이 목록만 고치면 화면 전체에 반영돼요.
 export const CHARTS = [
-  { id: 'bar', ko: '막대 (bar)', short: '막대', tokens: ['bar'], desc: '그룹의 크기를 비교' },
-  { id: 'line', ko: '선 (line)', short: '선', tokens: ['line'], desc: '연도·월처럼 순서가 있는 변화' },
-  { id: 'hist', ko: '히스토그램 (hist)', short: '히스토그램', tokens: ['hist'], desc: '값이 어느 구간에 많은지(분포)' },
-  { id: 'scatter', ko: '산점도 (scatter)', short: '산점도', tokens: ['scatter'], desc: '두 숫자가 함께 움직이는지' },
-  { id: 'pie', ko: '원 (pie)', short: '원', tokens: ['pie'], desc: '전체 중 각 부분의 비율' },
+  { id: 'bar', ko: '막대 (plt.bar)', short: '막대', tokens: ['bar'], desc: '그룹의 크기를 비교' },
+  { id: 'line', ko: '선 (plt.plot)', short: '선', tokens: ['plt.plot', 'line'], desc: '연도·월처럼 순서가 있는 변화' },
+  { id: 'hist', ko: '히스토그램 (plt.hist)', short: '히스토그램', tokens: ['hist'], desc: 'movies처럼 묶을 열이 없을 때, 값이 어느 구간에 많은지(분포). 수업에서는 안 배웠어요' },
 ]
 
 export const KIND_LABEL = { number: '숫자', group: '묶는 열', text: '글자(값 많음)' }

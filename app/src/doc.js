@@ -167,11 +167,11 @@ export const concernMain = g => (g.concernParts.find(p => p.trim()) || '').trim(
 // 예전에는 deck.speakers 목록 하나에 저장했으므로 그 값도 읽는다.
 export const SLIDE_COUNT = 7
 export const speakersOf = d => Array.from({ length: SLIDE_COUNT }, (_, n) => d[`speaker${n}`] ?? d.speakers?.[n] ?? '')
-// 그래프 축을 한 줄로 (원그래프는 축이 없다). 영어 축 이름을 썼으면 함께 보여 준다.
+// 그래프 축을 한 줄로 (원그래프는 축이 없다). 축 이름을 썼으면 함께 보여 준다.
 export function axisText(g) {
   const a = axisOf(g)
   if (a.pie) return ''
-  const labels = g.xLabel.trim() || g.yLabel.trim() ? ` · 축 이름(영어) x="${g.xLabel.trim()}", y="${g.yLabel.trim()}"` : ''
+  const labels = g.xLabel.trim() || g.yLabel.trim() ? ` · 축 이름 x="${g.xLabel.trim()}", y="${g.yLabel.trim()}"` : ''
   return ` (가로축 x: ${a.x || '?'} / 세로축 y: ${a.y || '?'}${labels})`
 }
 

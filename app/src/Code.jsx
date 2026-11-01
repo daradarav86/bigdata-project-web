@@ -3,6 +3,7 @@ import { TOPICS, ERRORS, SYMPTOMS, TERMS } from './data/hints.js'
 import { TabIntro } from './Guide.jsx'
 import { buildCodeMemo } from './doc.js'
 import { NOTEBOOK_URL } from './data/meta.js'
+import Results from './Results.jsx'
 
 function Ladder({ topic }) {
   const [level, setLevel] = useState(1)
@@ -90,7 +91,7 @@ function DesignMemo({ game }) {
   )
 }
 
-export default function Code({ game }) {
+export default function Code({ game, setDeck }) {
   const [id, setId] = useState(TOPICS[0].id)
   const topic = TOPICS.find(t => t.id === id)
   return (
@@ -110,6 +111,7 @@ export default function Code({ game }) {
         <Ladder key={id} topic={topic} />
       </section>
       <ErrorDecoder />
+      <Results game={game} setDeck={setDeck} />
       <Glossary />
     </div>
   )

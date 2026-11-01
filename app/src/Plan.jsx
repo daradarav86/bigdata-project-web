@@ -269,7 +269,7 @@ function SceneStep({ game, patch }) {
   )
 }
 
-const EN_STAT = { mean: 'Mean', median: 'Median', max: 'Max', min: 'Min', count: 'Count' }
+const EN_STAT = { mean: 'Mean', sum: 'Total', median: 'Median', max: 'Max', min: 'Min', count: 'Count' }
 
 // 그래프의 가로축(x)·세로축(y)에 무엇을 둘지 고민하는 칸. 고른 것이 코드의 plt.xlabel / plt.ylabel로 이어진다.
 function AxisBox({ game, patch, ds }) {
@@ -301,12 +301,12 @@ function AxisBox({ game, patch, ds }) {
       </div>
       {game.chart === 'scatter' && a.x && a.x === a.y && <p className="warn small" role="status">가로축과 세로축이 같아요. 서로 다른 숫자 열을 골라요.</p>}
       <div className="two-col">
-        <label className="field"><span className="lbl">가로축 이름 (영어)</span>
+        <label className="field"><span className="lbl">가로축 이름</span>
           <input value={game.xLabel} maxLength={40} placeholder={`예: ${sugX}`} onChange={e => patch({ xLabel: e.target.value })} /></label>
-        <label className="field"><span className="lbl">세로축 이름 (영어)</span>
+        <label className="field"><span className="lbl">세로축 이름</span>
           <input value={game.yLabel} maxLength={40} placeholder={`예: ${sugY}`} onChange={e => patch({ yLabel: e.target.value })} /></label>
       </div>
-      <p className="hint">Colab 그래프에는 한글 글꼴이 없어서 축 이름과 제목은 영어로 써요. 코드의 <code>plt.xlabel("…")</code>, <code>plt.ylabel("…")</code>에 그대로 쓰여요.</p>
+      <p className="hint">코드의 <code>plt.xlabel("…")</code>, <code>plt.ylabel("…")</code>에 그대로 쓰여요. 노트북 맨 위에서 <code>koreanize_matplotlib</code>를 실행했다면 한글로 써도 돼요(16차시처럼). 한글이 □로 깨지면 영어로 써요.</p>
     </div>
   )
 }
@@ -538,7 +538,8 @@ function MethodStep({ game, patch, go }) {
       <div className="field">
         <span className="lbl">3-3. 코드 미리 설계하기 <small className="muted">(선택 · 시간이 남으면)</small></span>
         <p className="hint">안 써도 괜찮아요. 쓰면 노트북에서 코딩할 때 도움이 돼요. 아래 틀의 괄호를 우리 팀 선택으로 바꿔서 써 보세요. 열 이름은 대소문자와 띄어쓰기까지 똑같이!</p>
-        <pre className="frame">{isFreq(game) ? `result = df["(묶는 기준)"].value_counts()\nresult.plot(kind="(그래프 종류)")` : `result = df.groupby("(묶는 기준)")["(계산할 열)"].(통계 함수)()\nresult.plot(kind="(그래프 종류)")`}</pre>
+        {/* 16차시 노트북과 같은 모양: result를 만들고 plt.bar / plt.plot(result.index, result.values) */}
+        <pre className="frame">{isFreq(game) ? `result = df["(묶는 기준)"].value_counts()\nplt.(bar 또는 plot)(result.index, result.values)` : `result = df.groupby("(묶는 기준)")["(계산할 열)"].(통계 함수)()\nplt.(bar 또는 plot)(result.index, result.values)`}</pre>
         <textarea rows={3} aria-label="코드 설계" value={game.codeDesign} onChange={e => patch({ codeDesign: e.target.value })} spellCheck={false} className="mono" />
         {game.codeDesign.trim() && <ul className="checks">{checks.map(c => <li key={c.label} className={c.ok ? 'ok' : 'no'}>{c.ok ? '✓' : '○'} {c.label}</li>)}</ul>}
       </div>

@@ -1,6 +1,6 @@
 ﻿import { useCallback, useEffect, useRef, useState } from 'react'
 import { CLASSES, GROUPS, DEFAULT_SETTINGS } from './classSettings.js'
-import { backend, SERVER, TEAM_AI, applyPatch } from './backend.js'
+import { backend, SERVER, TEAM_AI, applyPatch, graphTag } from './backend.js'
 
 export { TEAM_AI } // 코치는 팀당 총 10번 (하루 단위가 아니다)
 export const MAX_MEMBERS = 6
@@ -47,8 +47,10 @@ export const aiTotalOf = g => TEAM_AI + (g.ai?.bonus || 0)
 // - 이 기기에서 마지막으로 들어간 반·조: 입장 화면에 미리 골라 둔다 (비밀번호는 기억하지 않는다)
 const TOKEN_KEY = 'data-detective-token'
 const LAST_KEY = 'data-detective-last'
-const SAVE_MS = 700 // 고친 뒤 이만큼 쉬면 저장한다
-const SYNC_MS = 8000 // 이 간격으로 같은 팀의 다른 기기에서 고친 것과 선생님 설정을 받아 온다
+const SAVE_MS = 1000 // 고친 뒤 이만큼 쉬면 저장한다
+// 이 간격으로 같은 팀의 다른 기기에서 고친 것과 선생님 설정을 받아 온다.
+// 실시간일 필요는 없고 여러 차시 동안 서버 무료 한도 안에서 오래 버티는 게 중요해서 30초로 둔다. 화면을 보고 있지 않은 탭은 받지 않는다.
+const SYNC_MS = 30000
 const NESTED = ['deck', 'chats', 'dataQA'] // 이 항목은 안쪽 칸 단위로 저장한다 (팀원이 서로 다른 칸을 동시에 고쳐도 덮어쓰지 않게)
 const NESTED_LIST = ['members'] // 팀원 목록은 사람(번호) 단위로 저장한다 (각자 기기에서 자기 진로를 동시에 써도 덮어쓰지 않게)
 
@@ -144,12 +146,14 @@ export function useGame() {
     if (!token || sending.current) return
     try {
       const before = saved.current
-      const r = await backend.sync(token, rev.current)
+      const r = await backend.sync(token, rev.current, graphTag(ref.current.game?.deck?.graph))
       if (ref.current.token !== token || sending.current || saved.current !== before) return
       rev.current = r.rev
       setS(cur => {
         // 아직 보내지 않은 내 변경은 받은 기록 위에 다시 얹는다
-        const next = { ...cur, ai: r.ai, settings: r.settings, game: r.game ? withDefaults(applyPatch(r.game, pending.current)) : cur.game }
+        // 서버가 그래프 이미지를 뺐다면(graphKept) 이미 가진 것과 같다는 뜻이라 내 것을 그대로 쓴다
+        const got = r.game && r.graphKept ? { ...r.game, deck: { ...r.game.deck, graph: cur.game?.deck?.graph ?? '' } } : r.game
+        const next = { ...cur, ai: r.ai, settings: r.settings, game: got ? withDefaults(applyPatch(got, pending.current)) : cur.game }
         ref.current = next
         return next
       })
@@ -184,7 +188,8 @@ export function useGame() {
   // 들어가 있는 동안: 주기적으로, 그리고 화면으로 돌아올 때 받아 온다. 화면을 떠날 때는 남은 변경을 보낸다.
   useEffect(() => {
     if (!s.token) return undefined
-    const id = setInterval(sync, SYNC_MS)
+    // 화면을 보고 있는 탭만 받아 온다 (켜 둔 채 다른 일을 하는 탭이 서버를 계속 부르지 않게)
+    const id = setInterval(() => { if (document.visibilityState === 'visible') sync() }, SYNC_MS)
     const onVis = () => { if (document.visibilityState === 'visible') sync(); else flush() }
     document.addEventListener('visibilitychange', onVis)
     window.addEventListener('pagehide', flush)
