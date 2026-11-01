@@ -388,3 +388,6 @@ details summary { cursor: pointer; }
 .graphprev img { max-width: min(420px, 100%); border: 1px solid var(--line); border-radius: 8px; }
 .ladder .picks { margin-top: 8px; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--blue) 6%, transparent); }
 .ladder .picks ul { margin-top: 4px; }
+.practice .thinking { display: grid; gap: 10px; padding-left: 20px; margin: 8px 0 0; }
+.practice .thinking pre { margin-top: 6px; }
+.practice textarea { width: 100%; margin: 6px 0; }

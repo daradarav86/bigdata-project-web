@@ -22,7 +22,7 @@ function picksOf(kinds, game) {
   return kinds.map(k => map[k]).filter(Boolean)
 }
 
-function Ladder({ topic, game }) {
+export function Ladder({ topic, game }) {
   const [level, setLevel] = useState(1)
   const [tried, setTried] = useState('')
   const next = () => { setLevel(l => l + 1); setTried('') }

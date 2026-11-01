@@ -4,6 +4,7 @@ import Gate from './Gate.jsx'
 import Plan from './Plan.jsx'
 import Code from './Code.jsx'
 import Deck from './Deck.jsx'
+import Practice from './Practice.jsx'
 import CoachDock from './CoachDock.jsx'
 import ErrorBoundary from './ErrorBoundary.jsx'
 import { HowTo } from './Guide.jsx'
@@ -13,6 +14,7 @@ import { phaseOf } from './classSettings.js'
 import './App.css'
 
 const TABS = [
+  ['practice', '연습', '0차시 · 저장 안 돼요'],
   ['plan', '기획', '기획안 0~3번'],
   ['code', '코드', 'Colab 준비·도움'],
   ['deck', '발표', '3분 발표 7장'],
@@ -33,7 +35,8 @@ export default function App() {
   if (g.loading) return <div className="gate"><p className="lead">우리 팀 기록을 불러오는 중이에요…</p></div>
   if (!g.current) return <Gate createTeam={g.createTeam} joinTeam={g.joinTeam} lastTeam={g.lastTeam} notice={g.notice} server={g.server} />
 
-  const tab = phase.open.includes(want) ? want : phase.tab // 아직 잠긴 탭이면 지금 단계의 탭을 보여 준다
+  const isOpen = id => id === 'practice' || phase.open.includes(id) // 연습 탭은 언제나 열려 있다
+  const tab = isOpen(want) ? want : phase.tab // 아직 잠긴 탭이면 지금 단계의 탭을 보여 준다
   const done = PLAN_STEPS.filter(s => stepDone(s.id, game)).length
   const dock = tab === 'plan' || tab === 'code' // 발표 탭에서는 코치 바를 숨긴다
   return (
@@ -59,7 +62,7 @@ export default function App() {
       )}
       <nav className="tabs" aria-label="메뉴">
         {TABS.map(([id, label, sub]) => {
-          const locked = !phase.open.includes(id)
+          const locked = !isOpen(id)
           return (
             // 탭을 누를 때 선생님 설정을 다시 확인한다 (주기적으로 묻지 않으므로). 잠긴 탭도 눌러서 확인할 수 있게 disabled로 두지 않는다
             <button key={id} className={(tab === id ? 'on' : '') + (locked ? ' locked' : '')} aria-current={tab === id ? 'page' : undefined} aria-disabled={locked} onClick={() => { g.refresh(); setTab(id) }}>
@@ -71,6 +74,7 @@ export default function App() {
       </nav>
       <main>
         <ErrorBoundary key={tab}>
+          {tab === 'practice' && <Practice go={setTab} />}
           {tab === 'plan' && <Plan {...g} game={game} go={setTab} deckOpen={phase.open.includes('deck')} />}
           {tab === 'code' && <Code game={game} setDeck={g.setDeck} patch={g.patch} />}
           {tab === 'deck' && <Deck {...g} game={game} go={setTab} />}
