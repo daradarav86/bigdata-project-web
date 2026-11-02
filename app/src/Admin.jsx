@@ -53,9 +53,7 @@ function Stat({ label, value, sub }) {
 
 // 수업 중에 쓰는 반별 설정: 코치(API)를 막을지 풀지, 지금 어느 단계(기획안 / 코드 / 발표)인지, 반 전체 코인
 // 학생 화면은 탭을 누르거나 화면으로 돌아올 때 설정을 다시 받아 온다 (주기적으로 묻지 않는다).
-function ClassPanel({ rows, settings: all, onChange, filter, setFilter }) {
-  const [coins, setCoins] = useState(3)
-  const [msg, setMsg] = useState('')
+function ClassPanel({ rows, settings: all, onChange, filter, setFilter, coins, setCoins, msg, setMsg }) {
   const act = async (fn, done) => {
     try { setMsg(done(await fn())) } catch (e) { setMsg(e.message) }
     onChange()
@@ -78,7 +76,7 @@ function ClassPanel({ rows, settings: all, onChange, filter, setFilter }) {
           <button type="button" className="ad-btn" onClick={() => setAllClasses({ coach: false })}>코치 모두 닫기</button>
         </div>
       </div>
-      <label className="ad-coinbar">반 전체에 줄 코인 <input type="number" min="1" max="50" value={coins} onChange={e => setCoins(e.target.value)} />개씩</label>
+      <label className="ad-coinbar">한 번에 줄 코인 <input type="number" min="1" max="50" value={coins} onChange={e => setCoins(e.target.value)} />개 <small>(아래 반 카드의 "반 전체 +"와 팀 표의 "+"에 쓰여요)</small></label>
       <div className="ad-cgrid">
         {CLASSES.map(cls => {
           const s = settingsOf(all, cls)
@@ -280,6 +278,8 @@ export default function Admin() {
   const [q, setQ] = useState('')
   const [sort, setSort] = useState('name')
   const [clsFilter, setClsFilter] = useState('')
+  const [coins, setCoins] = useState(3) // 반 전체·팀별 "+"로 한 번에 주는 코인 수
+  const [msg, setMsg] = useState('')
   const refresh = useCallback(() => {
     call('list')
       .then(r => { setData(r); setErr('') })
@@ -308,6 +308,12 @@ export default function Admin() {
     .filter(r => !q.trim() || (r.name + r.members).includes(q.trim()))
     .sort((a, b) => (sort === 'progress' ? a.n - b.n : sort === 'recent' ? b.updatedAt - a.updatedAt : sort === 'coins' ? a.coinsLeft - b.coinsLeft : a.name.localeCompare(b.name, 'ko')))
   const sel = rows.find(r => r.name === pick)
+  const coinN = Math.max(1, Math.min(50, Number(coins) || 0))
+  // 팀 표의 "+": 그 팀에만 코인을 준다
+  const giveTeam = async name => {
+    try { await call('coins', { keys: [name], n: coinN }); setMsg(`${name}에 코인 ${coinN}개를 줬어요.`) } catch (e) { setMsg(e.message) }
+    refresh()
+  }
 
   const avg = rows.length ? Math.round((rows.reduce((s, r) => s + r.n, 0) / rows.length / PLAN_STEPS.length) * 100) : 0
   const finished = rows.filter(r => r.n === PLAN_STEPS.length).length
@@ -342,7 +348,7 @@ export default function Admin() {
         <Stat label="코인 다 쓴 팀" value={`${dry}팀`} />
       </div>
 
-      <ClassPanel rows={rows} settings={data.settings} onChange={refresh} filter={clsFilter} setFilter={setClsFilter} />
+      <ClassPanel rows={rows} settings={data.settings} onChange={refresh} filter={clsFilter} setFilter={setClsFilter} coins={coins} setCoins={setCoins} msg={msg} setMsg={setMsg} />
 
       <div className="ad-tools">
         <input type="search" aria-label="팀 이름이나 팀원 검색" placeholder="팀 이름·팀원 검색" value={q} onChange={e => setQ(e.target.value)} />
@@ -372,7 +378,10 @@ export default function Admin() {
                   <td><div className="ad-bar" role="img" aria-label={`${r.n}/${PLAN_STEPS.length} 단계`}><i style={{ width: `${(r.n / PLAN_STEPS.length) * 100}%` }} /></div><small>{r.n}/{PLAN_STEPS.length}</small></td>
                   <td>{r.cur}</td>
                   <td>{r.dataset}</td>
-                  <td className={r.coinsLeft === 0 ? 'warn' : ''}>{r.coinsLeft}/{r.coinsTotal} 남음</td>
+                  <td className={r.coinsLeft === 0 ? 'warn' : ''}>
+                    <span>{r.coinsLeft}/{r.coinsTotal} 남음</span>{' '}
+                    <button type="button" className="ad-plus" aria-label={`${r.name}에 코인 ${coinN}개 주기`} title={`이 팀에 코인 ${coinN}개 주기`} onClick={() => giveTeam(r.name)}>+{coinN}</button>
+                  </td>
                   <td>{r.reviews}/5</td>
                   <td>{r.results}/{RESULT_KEYS.length}</td>
                   <td>{ago(r.updatedAt)}</td>

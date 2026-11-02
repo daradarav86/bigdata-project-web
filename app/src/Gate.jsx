@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { HowTo } from './Guide.jsx'
 import { MAX_MEMBERS, isPin } from './store.js'
-import { CLASSES, GROUPS, teamKey } from './classSettings.js'
+import { CLASSES, TEST_CLASS, groupsOf, teamKey } from './classSettings.js'
 import { Seg } from './ui.jsx'
 import { SITE_NAME } from './data/meta.js'
 
@@ -12,14 +12,14 @@ function TeamPick({ cls, no, setCls, setNo }) {
   return (
     <div className="two-col">
       <label className="field"><span className="lbl">반</span>
-        <select value={cls} onChange={e => setCls(e.target.value)}>
+        <select value={cls} onChange={e => { setCls(e.target.value); if (!groupsOf(e.target.value).includes(no)) setNo('') }}>
           <option value="">반 선택</option>
-          {CLASSES.map(c => <option key={c} value={c}>{c}반</option>)}
+          {CLASSES.map(c => <option key={c} value={c}>{c}반{c === TEST_CLASS ? ' (시험용)' : ''}</option>)}
         </select></label>
       <label className="field"><span className="lbl">조</span>
-        <select value={no || ''} onChange={e => setNo(Number(e.target.value))}>
+        <select value={no} onChange={e => setNo(e.target.value === '' ? '' : Number(e.target.value))}>
           <option value="">조 선택</option>
-          {GROUPS.map(n => <option key={n} value={n}>{n}조</option>)}
+          {groupsOf(cls).map(n => <option key={n} value={n}>{n}조</option>)}
         </select></label>
     </div>
   )
@@ -29,7 +29,7 @@ function TeamPick({ cls, no, setCls, setNo }) {
 export default function Gate({ createTeam, joinTeam, lastTeam, notice, server }) {
   const [mode, setMode] = useState(lastTeam ? 'join' : 'create')
   const [cls, setCls] = useState(lastTeam?.cls ?? '') // 이 기기에서 마지막으로 들어간 반·조를 미리 골라 둔다
-  const [no, setNo] = useState(lastTeam?.no ?? 0)
+  const [no, setNo] = useState(lastTeam?.no ?? '') // 빈 값('')은 아직 안 고른 것 (1-0반에는 0조가 있어서 0으로 나타내지 않는다)
   const [pass, setPass] = useState('')
   const [pass2, setPass2] = useState('')
   const [size, setSize] = useState(4)
@@ -42,7 +42,7 @@ export default function Gate({ createTeam, joinTeam, lastTeam, notice, server })
     setErr(''); setBusy(true)
     try { const r = await fn(); if (!r.ok) setErr(r.error) } catch { setErr('처리하지 못했어요. 다시 시도해 주세요.') } finally { setBusy(false) }
   }
-  const picked = !!cls && !!no
+  const picked = !!cls && no !== ''
   const create = () => {
     if (pass !== pass2) return setErr('비밀번호 확인이 달라요.')
     run(() => createTeam({ cls, no, pass, size, members: members.slice(0, size) }))

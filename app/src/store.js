@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useRef, useState } from 'react'
-import { CLASSES, GROUPS, DEFAULT_SETTINGS } from './classSettings.js'
+import { CLASSES, groupsOf, DEFAULT_SETTINGS } from './classSettings.js'
 import { backend, SERVER, TEAM_AI, applyPatch, graphTag } from './backend.js'
 
 export { TEAM_AI } // 코치는 팀당 총 10번 (하루 단위가 아니다)
@@ -237,7 +237,7 @@ export function useGame() {
   }
   // 팀 만들기: 반·조는 목록에서 고른 값이고(직접 쓰지 않는다), 비밀번호는 숫자 4~6자리(PIN)다.
   const createTeam = async ({ cls, no, pass, size, members }) => {
-    if (!CLASSES.includes(cls) || !GROUPS.includes(no)) return { ok: false, error: '반과 조를 목록에서 골라 주세요.' }
+    if (!CLASSES.includes(cls) || !groupsOf(cls).includes(no)) return { ok: false, error: '반과 조를 목록에서 골라 주세요.' }
     if (!isPin(pass)) return { ok: false, error: PIN_RULE }
     if (members.some(m => !m.name.trim())) return { ok: false, error: '팀원 이름을 모두 써 주세요.' }
     const { ai: _ai, ...base } = START

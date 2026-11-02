@@ -1,6 +1,8 @@
-// 반(1-1 ~ 1-8)과 조(1 ~ 10). 학생은 입장할 때 이 목록에서 고르기만 한다 (직접 쓰지 않는다).
-export const CLASSES = Array.from({ length: 8 }, (_, i) => `1-${i + 1}`)
+// 반(1-1 ~ 1-8, 맨 뒤에 선생님 시험용 1-0)과 조(1 ~ 10). 학생은 입장할 때 이 목록에서 고르기만 한다 (직접 쓰지 않는다).
+export const TEST_CLASS = '1-0' // 선생님이 시험해 보는 반. 0조도 있다 (서버 supabase/functions/api의 validTeam과 같은 규칙)
+export const CLASSES = [...Array.from({ length: 8 }, (_, i) => `1-${i + 1}`), TEST_CLASS]
 export const GROUPS = Array.from({ length: 10 }, (_, i) => i + 1)
+export const groupsOf = cls => (cls === TEST_CLASS ? [0, ...GROUPS] : GROUPS)
 export const teamKey = (cls, no) => `${cls} ${no}조`
 
 // 3차시 수업 단계: 선생님이 반마다 지금 하는 일을 정하면, 그 단계까지의 탭만 열린다.

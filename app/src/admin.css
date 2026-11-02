@@ -76,6 +76,8 @@
 .ad-toggle.on { color: var(--ink); border-color: var(--ok); font-weight: 600; }
 .ad-toggle.on i { background: var(--ok); }
 .ad-toggle.on i::after { left: 16px; }
+.ad-plus { background: var(--blue-soft); color: var(--blue); border: 1px solid var(--blue); border-radius: 99px; padding: 2px 10px; min-height: 28px; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.ad-plus:hover { background: var(--blue); color: var(--on-blue); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .ad-login { max-width: 360px; margin: 80px auto; display: grid; gap: 12px; }
 .ad-login input { width: 100%; }

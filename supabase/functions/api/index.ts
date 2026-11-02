@@ -4,7 +4,7 @@
 // 관리자: admin_* (요청 머리글 x-admin-password가 ADMIN_PASSWORD와 같아야 한다)
 import { db, json, fail, CORS, newSalt, hashPin, makeToken, teamOf, settingsOf, coinsOf, same, DEFAULT_SETTINGS, type TeamRow } from '../_shared/common.ts'
 
-const CLASS_RE = /^1-[1-8]$/ // 1-1 ~ 1-8반
+const CLASS_RE = /^1-[0-8]$/ // 1-1 ~ 1-8반, 그리고 선생님 시험용 1-0반 (1-0반에는 0조도 있다)
 const PIN_RE = /^\d{4,6}$/
 const MAX_BODY = 3_000_000 // 발표 그래프 이미지까지 들어가므로 넉넉히
 const MAX_FAILS = 5 // 비밀번호를 연속으로 이만큼 틀리면
@@ -13,7 +13,7 @@ const LOCK_MIN = 5 // 이 시간(분) 동안 잠근다
 const teamKey = (cls: string, no: number) => `${cls} ${no}조`
 // 그래프 이미지의 짧은 표식 (app/src/backend.js의 graphTag와 같은 방식)
 const graphTag = (s: string) => (s ? `${s.length}:${s.slice(-32)}` : '')
-const validTeam = (cls: unknown, no: unknown) => typeof cls === 'string' && CLASS_RE.test(cls) && Number.isInteger(no) && (no as number) >= 1 && (no as number) <= 10
+const validTeam = (cls: unknown, no: unknown) => typeof cls === 'string' && CLASS_RE.test(cls) && Number.isInteger(no) && (no as number) >= (cls === '1-0' ? 0 : 1) && (no as number) <= 10
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 
 // 들어온 뒤 학생 화면에 돌려주는 것: 토큰, 기록, 코인, 반 설정
