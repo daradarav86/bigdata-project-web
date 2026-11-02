@@ -103,12 +103,12 @@ function ClassPanel({ rows, settings: all, onChange, filter, setFilter, coins, s
   )
 }
 
-function Detail({ row, onChange, onClose }) {
+function Detail({ row, onChange, onClose, startTab = 'plan' }) {
   const { g } = row
   const [bonus, setBonus] = useState(5)
   const [pw, setPw] = useState('')
   const [msg, setMsg] = useState('')
-  const [tab, setTab] = useState('plan')
+  const [tab, setTab] = useState(startTab)
   const ds = getDs(g.dataset)
   let planText = ''
   try { planText = buildPlanText(g) } catch { planText = '(기획안을 만들 수 없는 상태예요)' }
@@ -275,6 +275,7 @@ export default function Admin() {
   const [data, setData] = useState(null) // { teams, settings } — 서버(또는 이 브라우저)에서 받은 것
   const [err, setErr] = useState('')
   const [pick, setPick] = useState('')
+  const [pickTab, setPickTab] = useState('plan') // 팀을 열 때 처음 보여 줄 탭 (표의 "비번 초기화"는 관리 탭으로 연다)
   const [q, setQ] = useState('')
   const [sort, setSort] = useState('name')
   const [clsFilter, setClsFilter] = useState('')
@@ -374,7 +375,8 @@ export default function Admin() {
             <tbody>
               {shown.map(r => (
                 <tr key={r.name} className={pick === r.name ? 'on' : ''}>
-                  <td><button type="button" className="ad-link" onClick={() => setPick(r.name)}>{r.name}</button><small>{r.members}</small></td>
+                  <td><button type="button" className="ad-link" onClick={() => { setPickTab('plan'); setPick(r.name) }}>{r.name}</button><small>{r.members}</small>
+                    <button type="button" className="ad-plus ad-key" aria-label={`${r.name} 비밀번호 초기화`} title="이 팀의 비밀번호를 새로 정해 줘요" onClick={() => { setPickTab('manage'); setPick(r.name) }}>비밀번호 초기화</button></td>
                   <td><div className="ad-bar" role="img" aria-label={`${r.n}/${PLAN_STEPS.length} 단계`}><i style={{ width: `${(r.n / PLAN_STEPS.length) * 100}%` }} /></div><small>{r.n}/{PLAN_STEPS.length}</small></td>
                   <td>{r.cur}</td>
                   <td>{r.dataset}</td>
@@ -393,7 +395,7 @@ export default function Admin() {
         </div>
       )}
 
-      {sel && <Detail key={sel.name} row={sel} onChange={refresh} onClose={() => setPick('')} />}
+      {sel && <Detail key={sel.name + pickTab} startTab={pickTab} row={sel} onChange={refresh} onClose={() => setPick('')} />}
     </div>
   )
 }
